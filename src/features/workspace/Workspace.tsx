@@ -12,7 +12,7 @@ const MouthTwinScene = lazy(() => import('../visualization/Scene').then((m) => (
 const SOURCE_BADGE = {
   'precomputed-demo': 'Precomputed demo annotations',
   'heuristic-template': 'Template mapping · not a trained model',
-  model: 'Model output',
+  model: 'Tooth model · trained on DENTEX',
 } as const
 
 function useShortcuts() {

@@ -7,6 +7,7 @@
  * brightness (denser → brighter → thicker) and from distance to the tooth edge (teeth are round).
  */
 import type { InferenceResult } from '../../types/inference'
+import { classToFdi } from '../pipeline/model/segModel'
 
 export interface ReliefData {
   gw: number
@@ -167,27 +168,64 @@ export function analyzeOpg(img: HTMLImageElement, result: InferenceResult, gw = 
   for (let i = 0; i < g.length; i++) v[i] = Math.min(1, Math.max(0, (g[i] - lo) / Math.max(1e-3, hi - lo)))
   v = boxBlur(v, gw, gh, 1)
 
-  // --- teeth: the brightest structures in the band around the occlusal plane
+  // --- teeth: from the segmentation model when available, otherwise the brightest structures near the occlusal plane
+  const seg = result.segmentation
+  const segFg = new Float32Array(g.length)
+  const segCls = new Uint8Array(g.length)
+  if (seg) {
+    for (let y = 0; y < gh; y++) {
+      const sy = Math.min(seg.height - 1, (y / (gh - 1)) * (seg.height - 1))
+      const y0 = Math.floor(sy), y1 = Math.min(seg.height - 1, y0 + 1), fy = sy - y0
+      for (let x = 0; x < gw; x++) {
+        const sx = Math.min(seg.width - 1, (x / (gw - 1)) * (seg.width - 1))
+        const x0 = Math.floor(sx), x1 = Math.min(seg.width - 1, x0 + 1), fx = sx - x0
+        const f = seg.fg
+        const W = seg.width
+        segFg[y * gw + x] =
+          f[y0 * W + x0] * (1 - fx) * (1 - fy) + f[y0 * W + x1] * fx * (1 - fy) + f[y1 * W + x0] * (1 - fx) * fy + f[y1 * W + x1] * fx * fy
+        segCls[y * gw + x] = seg.labels[Math.round(sy) * W + Math.round(sx)]
+      }
+    }
+  }
   const inBand = (x: number, y: number) => {
     const xn = x / gw
     const yn = y / gh
     return xn > 0.1 && xn < 0.9 && Math.abs(yn - occ(xn)) < 0.36
   }
-  const band: number[] = []
-  for (let y = 0; y < gh; y += 2) for (let x = 0; x < gw; x += 2) if (inBand(x, y)) band.push(v[y * gw + x])
-  const tT = percentile(band, 0.7)
+  let tT = 0.5
   let toothMask: Uint8Array = new Uint8Array(g.length)
-  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) if (inBand(x, y) && v[y * gw + x] > tT) toothMask[y * gw + x] = 1
-  toothMask = morph(morph(toothMask, gw, gh, true), gw, gh, false)
-  // teeth reach the occlusal plane; palate lines, cortices and canal borders don't
-  toothMask = filterComponents(toothMask, gw, gh, Math.round(gw * gh * 0.0005), (i) => {
-    const x = i % gw
-    const y = (i - x) / gw
-    return Math.abs(y / gh - occ(x / gw)) < 0.1
-  })
+  if (seg) {
+    for (let i = 0; i < g.length; i++) toothMask[i] = segFg[i] > 0.5 ? 1 : 0
+    toothMask = filterComponents(toothMask, gw, gh, Math.round(gw * gh * 0.0002), () => true)
+  } else {
+    const band: number[] = []
+    for (let y = 0; y < gh; y += 2) for (let x = 0; x < gw; x += 2) if (inBand(x, y)) band.push(v[y * gw + x])
+    tT = percentile(band, 0.7)
+    for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) if (inBand(x, y) && v[y * gw + x] > tT) toothMask[y * gw + x] = 1
+    toothMask = morph(morph(toothMask, gw, gh, true), gw, gh, false)
+    // teeth reach the occlusal plane; palate lines, cortices and canal borders don't
+    toothMask = filterComponents(toothMask, gw, gh, Math.round(gw * gh * 0.0005), (i) => {
+      const x = i % gw
+      const y = (i - x) / gw
+      return Math.abs(y / gh - occ(x / gw)) < 0.1
+    })
+  }
 
   // round the teeth: thickness grows with distance from the tooth edge (smoothed to avoid terracing)
-  let dist: Float32Array = distanceInside(toothMask, gw, gh)
+  // with model labels, the border between two neighbouring teeth also counts as an edge, so each tooth rounds on its own
+  let distMask: Uint8Array = toothMask
+  if (seg) {
+    distMask = Uint8Array.from(toothMask)
+    for (let y = 1; y < gh - 1; y++)
+      for (let x = 1; x < gw - 1; x++) {
+        const i = y * gw + x
+        const c = segCls[i]
+        if (!c) continue
+        const n = [segCls[i - 1], segCls[i + 1], segCls[i - gw], segCls[i + gw]]
+        if (n.some((k) => k && k !== c)) distMask[i] = 0
+      }
+  }
+  let dist: Float32Array = distanceInside(distMask, gw, gh)
   dist = boxBlur(boxBlur(dist, gw, gh, 2), gw, gh, 2)
   const R = gw / 72 // ≈ half a tooth width in grid pixels
   const pxToMm = 170 / gw
@@ -195,7 +233,7 @@ export function analyzeOpg(img: HTMLImageElement, result: InferenceResult, gw = 
   for (let i = 0; i < g.length; i++) {
     if (!toothMask[i]) continue
     const round = Math.sqrt(Math.min(1, dist[i] / R))
-    const soft = smoothstep(tT - 0.08, tT + 0.05, v[i])
+    const soft = seg ? smoothstep(0.45, 0.8, segFg[i]) : smoothstep(tT - 0.08, tT + 0.05, v[i])
     toothH[i] = R * pxToMm * 1.7 * round * (0.72 + 0.4 * v[i]) * (0.35 + 0.65 * soft)
   }
   toothH = boxBlur(boxBlur(toothH, gw, gh, 1), gw, gh, 1)
@@ -207,6 +245,11 @@ export function analyzeOpg(img: HTMLImageElement, result: InferenceResult, gw = 
   const all: number[] = []
   for (let i = 0; i < g.length; i += 3) all.push(vb[i])
   const tB = percentile(all, 0.42)
+  // bone only near teeth: keeps the spine, hyoid, skull base and image labels out of the model
+  const notTooth = new Uint8Array(g.length)
+  for (let i = 0; i < g.length; i++) notTooth[i] = toothMask[i] ? 0 : 1
+  const distToTooth = distanceInside(notTooth, gw, gh)
+  const reach = gh * 0.13
   let boneH: Float32Array = new Float32Array(g.length)
   for (let y = 0; y < gh; y++)
     for (let x = 0; x < gw; x++) {
@@ -215,7 +258,8 @@ export function analyzeOpg(img: HTMLImageElement, result: InferenceResult, gw = 
       const yn = y / gh
       const edge = smoothstep(0.02, 0.07, xn) * smoothstep(0.02, 0.07, 1 - xn)
       const band = 1 - smoothstep(0.3, 0.4, Math.abs(yn - occ(xn))) // keeps skull base, labels and markers out
-      boneH[i] = 5.5 * smoothstep(tB, tB + 0.22, vb[i]) * edge * band
+      const near = 1 - smoothstep(reach * 0.55, reach, distToTooth[i])
+      boneH[i] = 5.5 * smoothstep(tB, tB + 0.22, vb[i]) * edge * band * near
     }
   boneH = boxBlur(boneH, gw, gh, 2)
   const boneField = Float32Array.from(boneH)
@@ -236,6 +280,10 @@ export function analyzeOpg(img: HTMLImageElement, result: InferenceResult, gw = 
   }
   const idPx = ic.getImageData(0, 0, gw, gh).data
   const ids = new Uint8Array(g.length)
+  if (seg) {
+    for (let i = 0; i < g.length; i++) if (segCls[i]) ids[i] = classToFdi(segCls[i])
+    return { gw, gh, v, toothH, boneH, toothField, boneField, toothLevel: 0.04, boneLevel: 0.05, ids, toothMask, occ }
+  }
   const centers = result.teeth.map((t) => ({
     fdi: t.fdi,
     cx: t.bbox[0] + t.bbox[2] / 2,

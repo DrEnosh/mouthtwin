@@ -1,10 +1,11 @@
-import { lazy, Suspense, useCallback, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Wordmark } from '../../components/Wordmark'
 import { DISCLAIMER } from '../../components/Disclaimer'
 import { useMouthTwin } from '../../store/useMouthTwin'
 import { loadImageFromFile, loadImageFromUrl } from '../pipeline/loadImage'
 import { toPipelineError } from '../pipeline/errors'
-import { DEMO_IMAGE_URL, demoProvider, IMAGES_LEAVE_BROWSER, uploadProvider } from '../pipeline/providers'
+import { DEMO_IMAGE_URL, IMAGES_LEAVE_BROWSER, modelProvider, uploadProvider } from '../pipeline/providers'
+import { preloadModel } from '../pipeline/model/segModel'
 
 const ArchPreview = lazy(() => import('../visualization/ArchPreview').then((m) => ({ default: m.ArchPreview })))
 
@@ -20,11 +21,13 @@ export function Landing() {
   const [dragging, setDragging] = useState(false)
   const [busy, setBusy] = useState(false)
 
+  useEffect(() => preloadModel(), [])
+
   const runDemo = useCallback(async () => {
     setBusy(true)
     try {
-      const img = await loadImageFromUrl(DEMO_IMAGE_URL, 'synthetic-demo-opg.jpg')
-      begin(img, demoProvider)
+      const img = await loadImageFromUrl(DEMO_IMAGE_URL, 'DENTEX held-out OPG')
+      begin(img, modelProvider)
     } catch (e) {
       fail(toPipelineError(e))
     } finally {
@@ -134,7 +137,7 @@ export function Landing() {
             />
           </div>
           <p className="fade-up mt-4 text-[12.5px] text-faint" style={{ animationDelay: '340ms' }}>
-            The demo uses a synthetic panoramic image. No patient data.{' '}
+            The demo runs the model on a public, de-identified DENTEX X-ray it never saw in training.{' '}
             {IMAGES_LEAVE_BROWSER
               ? 'Uploads are sent to your configured inference server.'
               : 'Uploaded images are processed in your browser and are not uploaded or retained.'}
@@ -171,7 +174,18 @@ export function Landing() {
             </li>
           ))}
         </ol>
-        <p className="max-w-[70ch] text-[11.5px] leading-snug text-faint">{DISCLAIMER.short}</p>
+        <p className="max-w-[70ch] text-[11.5px] leading-snug text-faint">
+          {DISCLAIMER.short} Tooth model and demo X-ray from{' '}
+          <a
+            href="https://huggingface.co/datasets/ibrahimhamamci/DENTEX"
+            target="_blank"
+            rel="noreferrer"
+            className="underline decoration-line-strong underline-offset-2 hover:text-muted"
+          >
+            DENTEX
+          </a>{' '}
+          (Hamamci et al., MICCAI 2023), CC BY-NC-SA 4.0.
+        </p>
       </footer>
 
       {dragging && (

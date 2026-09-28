@@ -1,11 +1,13 @@
 import demoJson from '../../data/demo/demo-inference.json'
-import demoImageUrl from '../../data/demo/opg-synthetic.jpg'
+import demoImageUrl from '../../data/demo/dentex-heldout-demo.jpg'
 import { parseInferenceResult, type InferenceResult, type InferenceSource, type PipelineStageId, type StageReport } from '../../types/inference'
 import { PipelineError } from './errors'
 import type { LoadedImage } from './loadImage'
 import { fitArchTemplate } from './stages/archTemplate'
 import { estimateOcclusalPlane } from './stages/occlusalPlane'
 import { preprocess } from './stages/preprocess'
+import { detectionsFromSegmentation, occlusalCurveFrom } from './model/postprocess'
+import { segmentTeeth, type SegOutput } from './model/segModel'
 
 export interface ProviderStage {
   id: PipelineStageId
@@ -110,9 +112,56 @@ export function remoteProvider(baseUrl: string): InferenceProvider {
   }
 }
 
+/**
+ * Trained tooth model running in the browser (ONNX Runtime Web). Falls back to template mapping
+ * if the model can't be loaded (for example in a sandbox that blocks WebAssembly downloads).
+ */
+export const modelProvider: InferenceProvider = {
+  source: 'model',
+  label: 'MouthTwin tooth model (in your browser)',
+  stages: [
+    { id: 'preprocess', label: 'Normalising image', method: 'Resize to 768×384, greyscale' },
+    { id: 'detect', label: 'Detecting teeth', method: 'U-Net (MobileNetV2) trained on 574 DENTEX OPGs' },
+    { id: 'number', label: 'Assigning FDI numbers', method: 'Per-pixel FDI class (32 teeth), largest region per tooth' },
+    { id: 'segment', label: 'Segmenting tooth outlines', method: 'Model mask, traced outline' },
+    { id: 'map', label: 'Mapping teeth to the arch', method: 'Panoramic position → average arch template' },
+    { id: 'visualize', label: 'Building interactive model', method: '3D relief from the model mask and image pixels' },
+  ],
+  async run(image) {
+    let seg: SegOutput
+    try {
+      seg = await segmentTeeth(image)
+    } catch (e) {
+      if (e instanceof PipelineError && e.code === 'model-unavailable') {
+        const r = await heuristicProvider.run(image)
+        return { ...r, notes: 'The tooth model could not be loaded here, so template mapping was used instead.' }
+      }
+      throw e
+    }
+    const teeth = detectionsFromSegmentation(seg)
+    if (teeth.length < 4) {
+      throw new PipelineError(
+        'no-teeth',
+        "We couldn't confidently process this image.",
+        'The model found almost no teeth. Try uploading a clearer panoramic dental image.',
+      )
+    }
+    return {
+      schemaVersion: '1.0',
+      source: 'model',
+      notes: 'Tooth outlines and FDI numbers predicted by a model trained on the DENTEX dataset (CC BY-NC-SA 4.0).',
+      image: { width: image.width, height: image.height, modality: 'OPG', fileName: image.fileName, fileSizeBytes: image.fileSizeBytes },
+      occlusalCurve: occlusalCurveFrom(teeth) ?? estimateOcclusalPlane(preprocess(image)).curve,
+      teeth,
+      stages: report(this.stages),
+      segmentation: { width: seg.width, height: seg.height, labels: seg.labels, fg: seg.fg },
+    }
+  },
+}
+
 export function uploadProvider(): InferenceProvider {
   const url = import.meta.env.VITE_INFERENCE_URL as string | undefined
-  return url ? remoteProvider(url.replace(/\/$/, '')) : heuristicProvider
+  return url ? remoteProvider(url.replace(/\/$/, '')) : modelProvider
 }
 
 export const IMAGES_LEAVE_BROWSER = Boolean(import.meta.env.VITE_INFERENCE_URL)
