@@ -64,6 +64,13 @@ export interface InferenceResult {
   occlusalCurve?: { a: number; b: number; c: number }
   teeth: ToothDetection[]
   stages: StageReport[]
+  /** Per-pixel model output (runtime only, not part of the JSON contract). Labels are classes 0..32. */
+  segmentation?: {
+    width: number
+    height: number
+    labels: Uint8Array
+    fg: Float32Array
+  }
 }
 
 /** Runtime guard for JSON coming from files or a remote model. */

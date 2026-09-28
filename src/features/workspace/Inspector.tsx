@@ -11,7 +11,10 @@ const SOURCE_TEXT: Record<InferenceSource, { title: string; body: string }> = {
     title: 'Template mapping · no trained model',
     body: 'Teeth are placed from an average adult template along the detected occlusal plane. Missing or displaced teeth are not detected.',
   },
-  model: { title: 'Model output', body: 'Detections, numbering and outlines come from the connected inference server.' },
+  model: {
+    title: 'Tooth model · runs in your browser',
+    body: 'Outlines and FDI numbers are predicted by a U-Net trained on the public DENTEX dataset (Hamamci et al., MICCAI 2023, CC BY-NC-SA 4.0). Scores are the model’s own confidence, not clinical accuracy.',
+  },
 }
 
 export function Inspector() {

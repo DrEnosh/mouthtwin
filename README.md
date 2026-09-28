@@ -13,7 +13,23 @@ Turn a dental panoramic X-ray into an interactive, 3D-style model of the arch.
 - **Layers**: teeth and jaw bone (from the image), plus average tooth shapes as a reference.
 - **Modes**: Clinical, Anatomy, Patient.
 
-What is simulated is labelled in the UI. The demo annotations are the generator's ground truth. Uploads use template mapping, not a trained model. See `docs/ARCHITECTURE.md`.
+## Tooth model
+
+Uploads and the demo run a U-Net (MobileNetV2 encoder, 4.2M parameters) in the browser with ONNX Runtime Web. It outlines every tooth and assigns its FDI number, and the 3D relief is built from its masks.
+
+Trained on the DENTEX quadrant-enumeration set (574 OPGs for training, 60 held out). Results on the 60 held-out OPGs:
+
+| Metric | Value |
+| --- | --- |
+| Tooth vs background Dice | 0.909 |
+| Mean per-tooth (FDI class) Dice | 0.834 |
+| FDI numbering accuracy (per clinician-labelled tooth) | 96.4% |
+
+Curves and example overlays are in `ml/results/`. Training code is in `ml/`.
+
+**Data credit and license.** DENTEX: Hamamci et al., "DENTEX: An Abnormal Tooth Detection with Dental Enumeration and Diagnosis Benchmark for Panoramic X-rays", MICCAI 2023. https://huggingface.co/datasets/ibrahimhamamci/DENTEX. Released under CC BY-NC-SA 4.0, so the trained weights (`public/models/mouthtwin-teeth.onnx`) and the demo X-ray are shared under the same license: non-commercial use only, with attribution.
+
+These numbers describe agreement with clinician outlines on public data. They are not clinical validation. See `docs/ARCHITECTURE.md` for what the 3D can and can't show.
 
 ## Run it
 

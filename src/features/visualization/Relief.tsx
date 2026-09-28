@@ -274,6 +274,8 @@ export function Relief({ result, imageUrl, image }: { result: InferenceResult; i
   const bone = useMemo(() => makeMaterial('bone', texture), [texture])
   const picker = usePicker(result, data, frame)
   const pickMesh = useRef<THREE.Mesh>(null)
+  const labelEls = useRef(new Map<number, HTMLDivElement>())
+  const toCam = useMemo(() => new THREE.Vector3(), [])
   const lastMorph = useRef(-1)
 
   useEffect(() => {
@@ -317,6 +319,14 @@ export function Relief({ result, imageUrl, image }: { result: InferenceResult; i
 
   useFrame((state) => {
     const s = useMouthTwin.getState()
+    // hide labels of teeth on the far side of the arch (HTML labels are not depth-tested)
+    for (const [fdi, el] of labelEls.current) {
+      const a = toothAnchors.get(fdi)
+      if (!a) continue
+      toCam.copy(state.camera.position).sub(a.label)
+      const facing = toCam.dot(a.normal) > 0 || fdi === s.selectedFdi
+      el.style.opacity = facing ? '1' : '0'
+    }
     const pulse = 0.5 + 0.5 * Math.sin(state.clock.elapsedTime * 3.2)
     for (const u of [tooth.uniforms, bone.uniforms]) {
       u.uMorph.value = reveal.morph
@@ -392,7 +402,12 @@ export function Relief({ result, imageUrl, image }: { result: InferenceResult; i
           if (!a) return null
           return (
             <Html key={t.fdi} position={a.label} center zIndexRange={[20, 0]} style={{ pointerEvents: 'none' }}>
-              <div className={`fdi-chip ${t.fdi === selectedFdi ? 'is-selected' : ''} ${t.fdi === hoveredFdi ? 'is-hovered' : ''}`}>{t.fdi}</div>
+              <div
+                ref={(el) => {
+                  if (el) labelEls.current.set(t.fdi, el)
+                  else labelEls.current.delete(t.fdi)
+                }}
+                className={`fdi-chip ${t.fdi === selectedFdi ? 'is-selected' : ''} ${t.fdi === hoveredFdi ? 'is-hovered' : ''}`}>{t.fdi}</div>
             </Html>
           )
         })}
