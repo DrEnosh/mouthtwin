@@ -4,7 +4,7 @@ import { useMouthTwin, type Lens } from '../../store/useMouthTwin'
 const LENSES: { id: Lens; label: string; soon?: string }[] = [
   { id: 'anatomy', label: 'Anatomy' },
   { id: 'teeth', label: 'Teeth only' },
-  { id: 'template', label: 'Reference shapes' },
+  { id: 'xray', label: 'X-ray relief' },
   { id: 'section', label: 'Cross section', soon: 'Phase 5' },
   { id: 'timeline', label: 'Timeline', soon: 'Phase 6' },
 ]

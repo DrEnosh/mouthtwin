@@ -13,7 +13,7 @@ const SOURCE_TEXT: Record<InferenceSource, { title: string; body: string }> = {
   },
   model: {
     title: 'Tooth model · runs in your browser',
-    body: 'Outlines and FDI numbers are predicted by a U-Net trained on the public DENTEX dataset (Hamamci et al., MICCAI 2023, CC BY-NC-SA 4.0). Scores are the model’s own confidence, not clinical accuracy.',
+    body: 'Outlines and FDI numbers are predicted by a U-Net trained on the public DENTEX dataset (Hamamci et al., MICCAI 2023, CC BY-NC-SA 4.0). The 3D teeth and jaws come from one expert-labelled ToothFairy2 CBCT (CC BY-SA 4.0), with teeth removed, lengthened or tilted to match this X-ray. Scores are the model’s own confidence, not clinical accuracy.',
   },
 }
 
@@ -212,7 +212,7 @@ function ToothDetail({ tooth, det, result }: { tooth: ToothRef; det: ToothDetect
           <Status label="Detected" detail={method('detect')} />
           <Status label="Segmentation" detail={det.polygon.length ? method('segment') : 'Not available'} ok={det.polygon.length > 0} />
           <Status label="Numbering" detail={method('number')} />
-          <Status label="3D" detail="Extruded from the image pixels · thickness estimated from brightness" />
+          <Status label="3D" detail="Real CBCT tooth shape, length and tilt fitted to this X-ray" />
         </ul>
       </section>
 
@@ -220,9 +220,9 @@ function ToothDetail({ tooth, det, result }: { tooth: ToothRef; det: ToothDetect
         <p className="label mb-2">Layers</p>
         <div className="flex flex-wrap gap-1.5">
           {[
-            ['Tooth from image', layers.teeth],
-            ['Surrounding bone', layers.bone],
-            ['Reference shape', layers.template],
+            ['Tooth (crown + roots)', layers.teeth],
+            ['Jaw bone', layers.bone],
+            ['Nerve canal', layers.canals],
           ].map(([name, on]) => (
             <span
               key={String(name)}

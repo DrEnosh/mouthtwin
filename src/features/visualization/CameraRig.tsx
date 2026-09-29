@@ -9,7 +9,7 @@ import { reveal, toothAnchors, toothWorldCenter } from './runtime'
 
 const FOV = 32
 const FRONT_TARGET = new THREE.Vector3(0, 0, 0)
-export const HOME = { pos: new THREE.Vector3(47, 44, 106), target: new THREE.Vector3(0, -3, -6) }
+export const HOME = { pos: new THREE.Vector3(66, 50, 150), target: new THREE.Vector3(0, -4, -10) }
 
 export function CameraRig({ hasFlatStart }: { hasFlatStart: boolean }) {
   const cc = useRef<CameraControls>(null)

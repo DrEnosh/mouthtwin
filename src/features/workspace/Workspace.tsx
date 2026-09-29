@@ -98,7 +98,7 @@ export function Workspace() {
             <Suspense fallback={<div className="grid h-full place-items-center text-[12px] text-faint">Loading 3D engine…</div>}>
               <MouthTwinScene result={result} imageUrl={image.url} image={image.element} animate />
             </Suspense>
-            <ViewportLabel title="3D from your OPG" sub="Outlines from the image · depth estimated from brightness · average arch curve" />
+            <ViewportLabel title="3D from your OPG" sub="Reference CBCT anatomy fitted to this X-ray · not a scan of this patient" />
             <ModelControls showHint={view === 'model'} />
           </section>
         </main>

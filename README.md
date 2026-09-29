@@ -7,10 +7,10 @@ Turn a dental panoramic X-ray into an interactive, 3D-style model of the arch.
 ## What works now
 
 - **Run MouthTwin**: a synthetic OPG goes through a 5-second analysis animation, grows into 3D and bends back into an arch.
-- **3D from your image**: teeth and bone are extruded from the OPG's own pixels, so every outline, root, gap and filling is exactly what is in the X-ray. Thickness is estimated from brightness, and the arch curve is an average.
+- **3D anatomy fitted to your X-ray**: real teeth (crowns and roots), mandible, maxilla, nerve canals and sinuses from an expert-labelled CBCT (ToothFairy2). The tooth model decides which teeth are present, and each tooth's length and tilt are adjusted to match the OPG. The older brightness relief is still available as the "X-ray relief" layer.
 - **Upload OPG**: JPEG, PNG, WebP or BMP. The file is validated and processed in your browser. It is not uploaded or stored.
 - **Workspace**: Image, Model and Split views. Click any tooth to isolate it and fly the camera to it. The inspector shows FDI, Universal and Palmer notation, the tooth's outline in the OPG, and how each pipeline stage was produced.
-- **Layers**: teeth and jaw bone (from the image), plus average tooth shapes as a reference.
+- **Layers**: teeth, jaw bone, nerve canals, maxillary sinuses, X-ray relief.
 - **Modes**: Clinical, Anatomy, Patient.
 
 ## Tooth model
@@ -28,6 +28,8 @@ Trained on the DENTEX quadrant-enumeration set (574 OPGs for training, 60 held o
 Curves and example overlays are in `ml/results/`. Training code is in `ml/`.
 
 **Data credit and license.** DENTEX: Hamamci et al., "DENTEX: An Abnormal Tooth Detection with Dental Enumeration and Diagnosis Benchmark for Panoramic X-rays", MICCAI 2023. https://huggingface.co/datasets/ibrahimhamamci/DENTEX. Released under CC BY-NC-SA 4.0, so the trained weights (`public/models/mouthtwin-teeth.onnx`) and the demo X-ray are shared under the same license: non-commercial use only, with attribution.
+
+**Reference 3D anatomy.** One full healthy dentition (case ToothFairy2F_027) from ToothFairy2 (Bolelli et al., University of Modena and Reggio Emilia, https://ditto.ing.unimore.it/toothfairy2/), CC BY-SA 4.0. Only the label volume is used. `scripts/build_reference_anatomy.py` turns it into `public/models/reference-anatomy.glb`.
 
 These numbers describe agreement with clinician outlines on public data. They are not clinical validation. See `docs/ARCHITECTURE.md` for what the 3D can and can't show.
 

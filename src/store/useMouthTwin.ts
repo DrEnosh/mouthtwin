@@ -7,21 +7,25 @@ import type { InferenceProvider } from '../features/pipeline/providers'
 export type AppStage = 'landing' | 'processing' | 'workspace'
 export type ViewMode = 'image' | 'model' | 'split'
 export type AudienceMode = 'clinical' | 'anatomy' | 'patient'
-export type Lens = 'anatomy' | 'teeth' | 'template' | 'section' | 'timeline'
+export type Lens = 'anatomy' | 'teeth' | 'xray' | 'section' | 'timeline'
 
 export interface Layers {
-  /** Teeth extruded from the uploaded image */
+  /** Reference CBCT teeth fitted to the OPG */
   teeth: boolean
-  /** Bone extruded from the uploaded image */
+  /** Mandible and maxilla from the reference CBCT */
   bone: boolean
-  /** Average-shape reference teeth (not from the image) */
-  template: boolean
+  /** Inferior alveolar canals from the reference CBCT */
+  canals: boolean
+  /** Maxillary sinuses from the reference CBCT */
+  sinus: boolean
+  /** The OPG itself pushed into 3D (brightness relief) */
+  relief: boolean
 }
 
-const LENS_LAYERS: Record<'anatomy' | 'teeth' | 'template', Layers> = {
-  anatomy: { teeth: true, bone: true, template: false },
-  teeth: { teeth: true, bone: false, template: false },
-  template: { teeth: false, bone: false, template: true },
+const LENS_LAYERS: Record<'anatomy' | 'teeth' | 'xray', Layers> = {
+  anatomy: { teeth: true, bone: true, canals: true, sinus: true, relief: false },
+  teeth: { teeth: true, bone: false, canals: false, sinus: false, relief: false },
+  xray: { teeth: false, bone: false, canals: false, sinus: false, relief: true },
 }
 
 interface State {
@@ -78,7 +82,7 @@ export const useMouthTwin = create<State>((set, get) => ({
   view: 'model',
   audience: 'clinical',
   lens: 'anatomy',
-  layers: { teeth: true, bone: true, template: false },
+  layers: { teeth: true, bone: true, canals: true, sinus: false, relief: false },
   showNumbers: false,
   showMapping: true,
   isolate: true,
@@ -112,7 +116,7 @@ export const useMouthTwin = create<State>((set, get) => ({
     }),
   setLens: (lens) =>
     set(() => {
-      if (lens === 'anatomy' || lens === 'teeth' || lens === 'template') return { lens, layers: { ...LENS_LAYERS[lens] } }
+      if (lens === 'anatomy' || lens === 'teeth' || lens === 'xray') return { lens, layers: { ...LENS_LAYERS[lens] } }
       return { lens }
     }),
   toggleLayer: (k) => set((s) => ({ layers: { ...s.layers, [k]: !s.layers[k] } })),
