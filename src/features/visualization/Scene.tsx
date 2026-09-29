@@ -2,14 +2,13 @@ import { Environment, Grid, Lightformer } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Suspense, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
-import { TEETH } from '../../data/fdi'
 import { useMouthTwin } from '../../store/useMouthTwin'
 import type { InferenceResult } from '../../types/inference'
+import { AnatomyModel } from './AnatomyModel'
 import { CameraRig } from './CameraRig'
 import { OpgWrap } from './OpgWrap'
 import { Relief } from './Relief'
 import { linkAnchors, reveal, skipReveal, startReveal, tickReveal, toothWorldCenter } from './runtime'
-import { Tooth } from './Tooth'
 
 function RevealDriver({ animate }: { animate: boolean }) {
   const revealKey = useMouthTwin((s) => s.revealKey)
@@ -78,10 +77,8 @@ export function MouthTwinScene({
   image: HTMLImageElement
   animate: boolean
 }) {
-  const detections = useMemo(() => new Map(result.teeth.map((d) => [d.fdi, d])), [result])
   const select = useMouthTwin((s) => s.select)
-  const showTemplate = useMouthTwin((s) => s.layers.template)
-  const present = TEETH.filter((t) => detections.has(t.fdi))
+  const showRelief = useMouthTwin((s) => s.layers.relief)
   const hasFlatStart = animate
 
   return (
@@ -105,14 +102,12 @@ export function MouthTwinScene({
       </Environment>
 
       <Suspense fallback={null}>
-        <Relief result={result} imageUrl={imageUrl} image={image} />
+        <AnatomyModel result={result} />
       </Suspense>
-      {showTemplate && (
-        <group>
-          {present.map((t) => (
-            <Tooth key={t.fdi} tooth={t} detection={detections.get(t.fdi)} result={result} />
-          ))}
-        </group>
+      {showRelief && (
+        <Suspense fallback={null}>
+          <Relief result={result} imageUrl={imageUrl} image={image} interactive={false} />
+        </Suspense>
       )}
 
       {hasFlatStart && (

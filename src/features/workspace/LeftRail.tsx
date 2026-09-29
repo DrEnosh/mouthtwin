@@ -1,9 +1,11 @@
 import { useMouthTwin, type AudienceMode, type Layers } from '../../store/useMouthTwin'
 
 const LAYER_ROWS: { key: keyof Layers; label: string; swatch: string; tag: string }[] = [
-  { key: 'teeth', label: 'Teeth', swatch: 'var(--color-enamel)', tag: 'From image' },
-  { key: 'bone', label: 'Jaw bone', swatch: '#b9c2c9', tag: 'From image' },
-  { key: 'template', label: 'Average tooth shapes', swatch: '#d9c6a2', tag: 'Reference' },
+  { key: 'teeth', label: 'Teeth', swatch: 'var(--color-enamel)', tag: 'Fitted' },
+  { key: 'bone', label: 'Jaw bone', swatch: '#b9c4cc', tag: 'Reference' },
+  { key: 'canals', label: 'Nerve canals', swatch: 'var(--color-nerve)', tag: 'Reference' },
+  { key: 'sinus', label: 'Maxillary sinuses', swatch: '#7fb6c9', tag: 'Reference' },
+  { key: 'relief', label: 'X-ray relief', swatch: '#8b959d', tag: 'From image' },
 ]
 
 const MODES: { id: AudienceMode; label: string; hint: string }[] = [

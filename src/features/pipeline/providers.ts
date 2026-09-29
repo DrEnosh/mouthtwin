@@ -125,7 +125,7 @@ export const modelProvider: InferenceProvider = {
     { id: 'number', label: 'Assigning FDI numbers', method: 'Per-pixel FDI class (32 teeth), largest region per tooth' },
     { id: 'segment', label: 'Segmenting tooth outlines', method: 'Model mask, traced outline' },
     { id: 'map', label: 'Mapping teeth to the arch', method: 'Panoramic position → average arch template' },
-    { id: 'visualize', label: 'Building interactive model', method: '3D relief from the model mask and image pixels' },
+    { id: 'visualize', label: 'Building interactive model', method: 'Real CBCT anatomy (ToothFairy2) fitted tooth by tooth' },
   ],
   async run(image) {
     let seg: SegOutput

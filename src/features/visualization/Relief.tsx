@@ -264,7 +264,17 @@ function usePicker(result: InferenceResult, data: ReliefData, frame: Frame) {
   }, [result, data, frame])
 }
 
-export function Relief({ result, imageUrl, image }: { result: InferenceResult; imageUrl: string; image: HTMLImageElement }) {
+export function Relief({
+  result,
+  imageUrl,
+  image,
+  interactive = true,
+}: {
+  result: InferenceResult
+  imageUrl: string
+  image: HTMLImageElement
+  interactive?: boolean
+}) {
   const texture = useLoader(THREE.TextureLoader, imageUrl)
   const data = useMemo(() => analyzeOpg(image, result), [image, result])
   const frame = useMemo(() => makeFrame(data, result), [data, result])
@@ -296,6 +306,7 @@ export function Relief({ result, imageUrl, image }: { result: InferenceResult; i
 
   // anchors for camera fly-to, labels and the split-view link line
   useEffect(() => {
+    if (!interactive) return
     for (const t of result.teeth) {
       const cx = t.bbox[0] + t.bbox[2] / 2
       const cy = t.bbox[1] + t.bbox[3] / 2
@@ -308,9 +319,8 @@ export function Relief({ result, imageUrl, image }: { result: InferenceResult; i
       toothAnchors.set(t.fdi, { center, normal: n, label, upper })
     }
     return () => toothAnchors.clear()
-  }, [result, data, frame])
+  }, [result, data, frame, interactive])
 
-  const layers = useMouthTwin((s) => s.layers)
   const showNumbers = useMouthTwin((s) => s.showNumbers)
   const hoveredFdi = useMouthTwin((s) => s.hoveredFdi)
   const selectedFdi = useMouthTwin((s) => s.selectedFdi)
@@ -370,9 +380,9 @@ export function Relief({ result, imageUrl, image }: { result: InferenceResult; i
 
   return (
     <group>
-      {layers.teeth && <mesh geometry={toothGeo} material={tooth.mat} frustumCulled={false} raycast={() => null} />}
-      {layers.bone && <mesh geometry={boneGeo} material={bone.mat} frustumCulled={false} renderOrder={2} raycast={() => null} />}
-      <mesh
+      {<mesh geometry={toothGeo} material={tooth.mat} frustumCulled={false} raycast={() => null} />}
+      {<mesh geometry={boneGeo} material={bone.mat} frustumCulled={false} renderOrder={2} raycast={() => null} />}
+      {interactive && <mesh
         ref={pickMesh}
         geometry={picker.geo}
         frustumCulled={false}
@@ -395,8 +405,8 @@ export function Relief({ result, imageUrl, image }: { result: InferenceResult; i
         }}
       >
         <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} side={THREE.DoubleSide} />
-      </mesh>
-      {!reveal.running &&
+      </mesh>}
+      {interactive && !reveal.running &&
         labels.map((t) => {
           const a = toothAnchors.get(t.fdi)
           if (!a) return null
