@@ -7,7 +7,7 @@ Turn a dental panoramic X-ray into an interactive, 3D-style model of the arch.
 ## What works now
 
 - **Run MouthTwin**: a synthetic OPG goes through a 5-second analysis animation, grows into 3D and bends back into an arch.
-- **3D anatomy fitted to your X-ray**: real teeth (crowns and roots), mandible, maxilla, nerve canals and sinuses from an expert-labelled CBCT (ToothFairy2). The tooth model decides which teeth are present, and each tooth's length and tilt are adjusted to match the OPG. The older brightness relief is still available as the "X-ray relief" layer.
+- **3D anatomy fitted to your X-ray**: real teeth (crowns and roots), mandible, maxilla, nerve canals and sinuses from an expert-labelled CBCT (ToothFairy2). The tooth model decides which teeth are present. Each tooth is then compared with the same tooth on 634 expert-labelled OPGs (`ml/tooth_pose_stats.py`): extra tilt, a crown sitting deeper or higher than the bite line (impacted / unerupted teeth), a short root and crown-only outlines (developing wisdom teeth) are copied onto the 3D tooth. Fanning caused by head position on the OPG is removed first. Ambient occlusion gives the arch real depth. The older brightness relief is still available as the "X-ray relief" layer.
 - **Upload OPG**: JPEG, PNG, WebP or BMP. The file is validated and processed in your browser. It is not uploaded or stored.
 - **Workspace**: Image, Model and Split views. Click any tooth to isolate it and fly the camera to it. The inspector shows FDI, Universal and Palmer notation, the tooth's outline in the OPG, and how each pipeline stage was produced.
 - **Layers**: teeth, jaw bone, nerve canals, maxillary sinuses, crowns/fillings/root canals/implants, X-ray relief.

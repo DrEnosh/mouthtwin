@@ -139,7 +139,7 @@ export const modelProvider: InferenceProvider = {
       }
       throw e
     }
-    const found = detectionsFromSegmentation(seg)
+    const found = detectionsFromSegmentation(seg, image.width / image.height / (seg.width / seg.height))
     const { teeth, implants } = analyseRestorations(seg, found)
     if (teeth.length < 4) {
       throw new PipelineError(
