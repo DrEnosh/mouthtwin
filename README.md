@@ -23,27 +23,35 @@ Uploads and the demo run one U-Net (MobileNetV2 encoder, about 4.2M parameters) 
 - Cluj dental-condition OPG set (1,808 OPGs with boxes for implants, prosthetic restorations, fillings, root-canal treatment) for the restoration planes.
 - Heavy augmentation (tilt, shear, contrast, noise, blur, resolution loss) so noisy and awkward OPGs behave better.
 
-Results on held-out OPGs (never used for training):
+**Round 3 (current)** adds 2,400 more varied adult OPGs: STS-2D-Tooth (different country and scanners, dentist-checked tooth masks + 1,500 unlabelled) and AKU (many partially edentulous, bridged and crowned mouths, a human outline for every tooth). Children's OPGs are not used: the model has no classes for baby teeth.
 
-| Tooth numbering | Round 1 | Round 2 |
-| --- | --- | --- |
-| FDI numbering accuracy, 60 held-out DENTEX OPGs | 96.4% | **97.2%** |
-| Mean per-tooth Dice, same OPGs | 0.834 | **0.839** |
-| FDI numbering accuracy, 150 held-out hard OPGs (crowded, missing teeth, partial labels) | 92.0% | **94.5%** |
-| Worst-quartile per-tooth Dice, hard OPGs | 0.574 | **0.651** |
+Results on held-out OPGs (never used for training). Round 3 is started from round 2 and compared on the same sets:
 
-| Restoration found on held-out Cluj OPGs (per region, box labels) | Recall | Precision |
+| Held-out test | Round 1 | Round 2 | Round 3 |
+| --- | --- | --- | --- |
+| STS, 100 OPGs from new scanners: tooth-vs-background Dice | - | 0.76 | **0.91** |
+| STS: worst-quartile Dice | - | 0.70 | **0.88** |
+| AKU, 50 restored / partially edentulous OPGs: tooth Dice | - | 0.80 | **0.88** |
+| AKU: tooth type correct (incisor / canine / premolar / molar) | - | 96.8% | **97.5%** |
+| DENTEX, 60 OPGs: FDI numbering accuracy | 96.4% | 97.2% | 97.1% |
+| DENTEX: mean per-tooth Dice | 0.834 | 0.839 | 0.834 |
+| DENTEX hard teeth: numbering accuracy | 92.0% | 94.5% | 93.5% |
+| DENTEX hard teeth: worst-quartile Dice | 0.574 | 0.651 | 0.608 |
+
+Round 3 is much better on X-rays that do not look like DENTEX (which is what a random upload usually is) and slightly worse on the hardest DENTEX teeth. We ship it because generalisation matters more for uploads; the trade-off is real.
+
+| Restoration found on 220 held-out Cluj OPGs (per region, box labels, app thresholds) | Recall | Precision |
 | --- | --- | --- |
-| Root-canal filling | 0.92 | 0.83 |
-| Implant | 0.87 | 0.77 |
-| Crown / cap | 0.87 | 0.54 |
-| Filling | 0.83 | 0.65 |
+| Root-canal filling | 0.94 | 0.81 |
+| Implant | 0.92 | 0.84 |
+| Crown / cap | 0.84 | 0.64 |
+| Filling | 0.84 | 0.70 |
 
 Read these honestly: complex OPGs are better, not solved. Crowded, rotated or heavily restored mouths still produce wrong or missing tooth numbers, and crown and filling calls will sometimes be wrong (they are trained from loose boxes, and the app also checks that the pixels are actually bright). AU-OPG, which has much more crown detail, was not used because it has no published licence.
 
-Curves and example overlays (including restored cases) are in `ml/results/`. Training code is in `ml/`.
+Curves and example overlays are in `ml/results/` (round 3 in `ml/results/round3/`). Training code is in `ml/`.
 
-**Data credit and license.** DENTEX: Hamamci et al., "DENTEX: An Abnormal Tooth Detection with Dental Enumeration and Diagnosis Benchmark for Panoramic X-rays", MICCAI 2023, https://huggingface.co/datasets/ibrahimhamamci/DENTEX (CC BY-NC-SA 4.0). Cluj OPG condition dataset: Mureșanu, Hedeșiu, Iacob et al., Diagnostics 2024, https://doi.org/10.5281/zenodo.15487430 (CC BY 4.0, used for non-commercial research and education). Because DENTEX is share-alike, the trained weights (`public/models/mouthtwin-teeth.onnx`) and the demo X-ray are shared under CC BY-NC-SA 4.0: non-commercial use only, with attribution.
+**Data credit and license.** DENTEX: Hamamci et al., "DENTEX: An Abnormal Tooth Detection with Dental Enumeration and Diagnosis Benchmark for Panoramic X-rays", MICCAI 2023, https://huggingface.co/datasets/ibrahimhamamci/DENTEX (CC BY-NC-SA 4.0). Cluj OPG condition dataset: Mureșanu, Hedeșiu, Iacob et al., Diagnostics 2024, https://doi.org/10.5281/zenodo.15487430 (CC BY 4.0, used for non-commercial research and education). STS-2D-Tooth: Wang et al., Scientific Data 12:117 (2025), https://doi.org/10.5281/zenodo.10597292 (CC BY 4.0; the paper states CC BY-NC-ND). AKU OPG dataset: Data in Brief 2024, https://doi.org/10.5281/zenodo.10538750 (CC BY 4.0 on Zenodo; CC BY-NC 4.0 in the article). Because DENTEX is share-alike, the trained weights (`public/models/mouthtwin-teeth.onnx`) and the demo X-ray are shared under CC BY-NC-SA 4.0: non-commercial use only, with attribution.
 
 **Reference 3D anatomy.** One full healthy dentition (case ToothFairy2F_027) from ToothFairy2 (Bolelli et al., University of Modena and Reggio Emilia, https://ditto.ing.unimore.it/toothfairy2/), CC BY-SA 4.0. Only the label volume is used. `scripts/build_reference_anatomy.py` turns it into `public/models/reference-anatomy.glb`.
 

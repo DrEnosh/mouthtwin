@@ -1,0 +1,114 @@
+{
+ "round3": {
+  "E_val": {
+   "fdi_mean_dice": 0.8338178138542867,
+   "fdi_mean_iou": 0.7339560188164941,
+   "tooth_recall": 0.8647452178713528,
+   "fdi_numbering_acc": 0.9710144927536232,
+   "n_teeth": 1725,
+   "worst_quartile_dice": 0.7354432610140251,
+   "tooth_dice": 0.908606436962745
+  },
+  "D_hold": {
+   "fdi_mean_dice": 0.8040064764583045,
+   "fdi_mean_iou": 0.7053825848678663,
+   "tooth_recall": 0.797028026079232,
+   "fdi_numbering_acc": 0.9349904397705545,
+   "n_teeth": 523,
+   "worst_quartile_dice": 0.6084370559725797
+  },
+  "Cluj_eval": {
+   "implant": {
+    "iou": 0.569445901983419,
+    "recall": 0.8333333333333334,
+    "precision": 0.7377049180327869,
+    "n_gt": 60
+   },
+   "prosthetic_restoration": {
+    "iou": 0.5739789758452064,
+    "recall": 0.8745387453874539,
+    "precision": 0.4408817635270541,
+    "n_gt": 271
+   },
+   "filling": {
+    "iou": 0.4597076935522198,
+    "recall": 0.8561584840654608,
+    "precision": 0.6243862520458265,
+    "n_gt": 1161
+   },
+   "root_canal_treatment": {
+    "iou": 0.5985573313463113,
+    "recall": 0.9311827956989247,
+    "precision": 0.8274231678486997,
+    "n_gt": 930
+   }
+  },
+  "STS_hold": {
+   "tooth_dice": 0.911338947691939,
+   "worst_quartile_dice": 0.8777110502507424,
+   "n_images": 100
+  },
+  "AKU_hold": {
+   "tooth_dice": 0.8805477649495864,
+   "tooth_found": 0.9845679012345679,
+   "type_acc": 0.9753086419753086,
+   "n_teeth": 1296
+  }
+ },
+ "round2": {
+  "E_val": {
+   "fdi_mean_dice": 0.8394849936977244,
+   "fdi_mean_iou": 0.7413908027304148,
+   "tooth_recall": 0.8645250988491824,
+   "fdi_numbering_acc": 0.9721739130434782,
+   "n_teeth": 1725,
+   "worst_quartile_dice": 0.7454381551572429,
+   "tooth_dice": 0.9119460680454212
+  },
+  "D_hold": {
+   "fdi_mean_dice": 0.8188258883891446,
+   "fdi_mean_iou": 0.7230138765408944,
+   "tooth_recall": 0.8087109852961512,
+   "fdi_numbering_acc": 0.9445506692160612,
+   "n_teeth": 523,
+   "worst_quartile_dice": 0.6509042652403502
+  },
+  "Cluj_eval": {
+   "implant": {
+    "iou": 0.5874616944670282,
+    "recall": 0.8666666666666667,
+    "precision": 0.7678571428571429,
+    "n_gt": 60
+   },
+   "prosthetic_restoration": {
+    "iou": 0.5802771234941211,
+    "recall": 0.8671586715867159,
+    "precision": 0.5419664268585132,
+    "n_gt": 271
+   },
+   "filling": {
+    "iou": 0.4583035958646529,
+    "recall": 0.8311800172265289,
+    "precision": 0.652428810720268,
+    "n_gt": 1161
+   },
+   "root_canal_treatment": {
+    "iou": 0.5981247566725786,
+    "recall": 0.9236559139784947,
+    "precision": 0.8273878020713463,
+    "n_gt": 930
+   }
+  },
+  "STS_hold": {
+   "tooth_dice": 0.7600225755948627,
+   "worst_quartile_dice": 0.6983882010005269,
+   "n_images": 100
+  },
+  "AKU_hold": {
+   "tooth_dice": 0.8031710792832273,
+   "tooth_found": 0.9814814814814815,
+   "type_acc": 0.9683641975308642,
+   "n_teeth": 1296
+  }
+ }
+}

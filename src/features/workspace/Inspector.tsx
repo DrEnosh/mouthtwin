@@ -14,7 +14,7 @@ const SOURCE_TEXT: Record<InferenceSource, { title: string; body: string }> = {
   },
   model: {
     title: 'Tooth model · runs in your browser',
-    body: 'Outlines and FDI numbers are predicted by a U-Net trained on the public DENTEX dataset (Hamamci et al., MICCAI 2023, CC BY-NC-SA 4.0). The same model also flags crowns, fillings, root-canal fillings and implants (trained on the Cluj panoramic dataset, CC BY 4.0), which are drawn on the 3D teeth. The 3D teeth and jaws come from one expert-labelled ToothFairy2 CBCT (CC BY-SA 4.0), with teeth removed, lengthened or tilted to match this X-ray. Scores are the model’s own confidence, not clinical accuracy.',
+    body: 'Outlines and FDI numbers are predicted by a U-Net trained on the public DENTEX dataset (Hamamci et al., MICCAI 2023, CC BY-NC-SA 4.0). The same model also flags crowns, fillings, root-canal fillings and implants (trained on the Cluj panoramic dataset, CC BY 4.0). Extra adult X-rays from STS-2D-Tooth and the AKU OPG set make it work on more scanners, which are drawn on the 3D teeth. The 3D teeth and jaws come from one expert-labelled ToothFairy2 CBCT (CC BY-SA 4.0), with teeth removed, lengthened or tilted to match this X-ray. Scores are the model’s own confidence, not clinical accuracy.',
   },
 }
 
