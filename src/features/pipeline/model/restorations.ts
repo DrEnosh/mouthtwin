@@ -11,7 +11,12 @@ import type { ImplantDetection, ToothDetection, ToothRestorations } from '../../
 import type { SegOutput } from './segModel'
 import { occlusalCurveFrom } from './postprocess'
 
-const P = 127 // probability 0.5 on the 0..255 planes
+// per-plane thresholds on the 0..255 planes, tuned on 220 held-out Cluj OPGs for the round-3 model
+// (crown/cap 0.8 and filling 0.7 cut over-calling; implant and root canal stay at 0.5)
+const P_IMP = 127
+const P_PRR = 204
+const P_FIL = 178
+const P_RCT = 127
 const CROWN_FRACTION = 0.46 // share of the tooth height, from the occlusal edge, counted as crown
 
 export const fdiToClass = (fdi: number) => (Math.floor(fdi / 10) - 1) * 8 + (fdi % 10)
@@ -112,7 +117,7 @@ export function analyseRestorations(seg: SegOutput, teeth: ToothDetection[]): Re
 
   // bright restoration mask (for bridge detection and the radiopacity check)
   const brightRest = new Uint8Array(w * h)
-  for (let i = 0; i < brightRest.length; i++) if ((prr[i] > P || fil[i] > P) && input[i] >= bright) brightRest[i] = 1
+  for (let i = 0; i < brightRest.length; i++) if ((prr[i] > P_PRR || fil[i] > P_FIL) && input[i] >= bright) brightRest[i] = 1
   const { lab: bl } = components(brightRest, w, h)
 
   const perTooth = new Map<number, ToothRestorations>()
@@ -131,12 +136,12 @@ export function analyseRestorations(seg: SegOutput, teeth: ToothDetection[]): Re
     for (const i of list) {
       const y = Math.floor(i / w)
       const inCrown = upper ? y >= crownLimit : y <= crownLimit
-      if (imp[i] > P) impPix++
+      if (imp[i] > P_IMP) impPix++
       if (inCrown) {
         crown++
-        const r = prr[i] > P || fil[i] > P
+        const r = prr[i] > P_PRR || fil[i] > P_FIL
         if (r) crownRest++
-        if (fil[i] > P) crownFill++
+        if (fil[i] > P_FIL) crownFill++
         if (r && input[i] >= bright) {
           crownBright++
           const c = bl[i]
@@ -144,7 +149,7 @@ export function analyseRestorations(seg: SegOutput, teeth: ToothDetection[]): Re
         }
       } else {
         root++
-        if (rct[i] > P) rootRct++
+        if (rct[i] > P_RCT) rootRct++
       }
     }
     const r: ToothRestorations = {}
@@ -185,7 +190,7 @@ export function analyseRestorations(seg: SegOutput, teeth: ToothDetection[]): Re
   const owned = new Set<number>()
   for (const d of teeth) for (const i of pix.get(d.fdi) ?? []) owned.add(i)
   const impMask = new Uint8Array(w * h)
-  for (let i = 0; i < impMask.length; i++) if (imp[i] > P) impMask[i] = 1
+  for (let i = 0; i < impMask.length; i++) if (imp[i] > P_IMP) impMask[i] = 1
   const { lab: il, comps: ic } = components(impMask, w, h)
   const inside = new Array(ic.length).fill(0)
   for (let i = 0; i < il.length; i++) if (il[i] && owned.has(i)) inside[il[i]]++
@@ -234,7 +239,7 @@ export function analyseRestorations(seg: SegOutput, teeth: ToothDetection[]): Re
       for (let x = Math.max(0, c.minX - 3); x <= Math.min(w - 1, c.maxX + 3); x++) {
         n++
         const i = y * w + x
-        if ((prr[i] > P || fil[i] > P) && input[i] >= bright) hit++
+        if ((prr[i] > P_PRR || fil[i] > P_FIL) && input[i] >= bright) hit++
       }
     }
     implants.push({

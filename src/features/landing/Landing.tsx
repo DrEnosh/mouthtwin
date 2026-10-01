@@ -193,7 +193,7 @@ export function Landing() {
           >
             Cluj OPG dataset
           </a>{' '}
-          (Mureșanu et al., 2024), CC BY 4.0. Reference 3D anatomy from{' '}
+          (Mureșanu et al., 2024), CC BY 4.0, plus STS-2D-Tooth (Wang et al., 2025) and AKU OPG (2024) X-rays. Reference 3D anatomy from{' '}
           <a
             href="https://ditto.ing.unimore.it/toothfairy2/"
             target="_blank"
