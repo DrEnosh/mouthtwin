@@ -184,7 +184,16 @@ export function Landing() {
           >
             DENTEX
           </a>{' '}
-          (Hamamci et al., MICCAI 2023), CC BY-NC-SA 4.0. Reference 3D anatomy from{' '}
+          (Hamamci et al., MICCAI 2023), CC BY-NC-SA 4.0, and crown, filling, root-canal and implant labels from the{' '}
+          <a
+            href="https://doi.org/10.5281/zenodo.15487430"
+            target="_blank"
+            rel="noreferrer"
+            className="underline decoration-line-strong underline-offset-2 hover:text-muted"
+          >
+            Cluj OPG dataset
+          </a>{' '}
+          (Mureșanu et al., 2024), CC BY 4.0. Reference 3D anatomy from{' '}
           <a
             href="https://ditto.ing.unimore.it/toothfairy2/"
             target="_blank"
