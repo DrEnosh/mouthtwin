@@ -1,5 +1,7 @@
 import { Environment, Grid, Lightformer } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { EffectComposer, N8AO, ToneMapping, Vignette } from '@react-three/postprocessing'
+import { ToneMappingMode } from 'postprocessing'
 import { Suspense, useLayoutEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useMouthTwin } from '../../store/useMouthTwin'
@@ -40,6 +42,20 @@ function ProjectionTracker() {
     linkAnchors.model.visible = c.z < 1 && c.x > -1.05 && c.x < 1.05
   })
   return null
+}
+
+/**
+ * Depth cues: ambient occlusion darkens the contacts between teeth, the gum line and the furcations so the
+ * arch reads as a solid 3D object instead of flat-lit shapes.
+ */
+function Effects() {
+  return (
+    <EffectComposer multisampling={4} enableNormalPass={false}>
+      <N8AO aoRadius={4} distanceFalloff={1.2} intensity={2.4} quality="medium" color="#0b0d0f" />
+      <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+      <Vignette offset={0.32} darkness={0.42} />
+    </EffectComposer>
+  )
 }
 
 function Floor() {
@@ -89,6 +105,8 @@ export function MouthTwinScene({
       gl={{ antialias: true, alpha: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.05 }}
       onPointerMissed={() => select(null)}
     >
+      {/* opaque background: post-processing mishandles see-through bone over a transparent canvas */}
+      <color attach="background" args={['#080a0c']} />
       <RevealDriver animate={hasFlatStart} />
       <ambientLight intensity={0.35} />
       <hemisphereLight args={['#dfe9ee', '#1a1410', 0.55]} />
@@ -116,6 +134,7 @@ export function MouthTwinScene({
         </Suspense>
       )}
       <Floor />
+      <Effects />
       <CameraRig hasFlatStart={hasFlatStart} />
       <ProjectionTracker />
     </Canvas>

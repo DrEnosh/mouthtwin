@@ -4,6 +4,7 @@
  */
 import type { NormPoint, ToothDetection } from '../../../types/inference'
 import { classToFdi, type SegOutput } from './segModel'
+import { attachPoses, fitPoses, toothAxis, type ToothAxis } from './toothPose'
 
 const MIN_AREA = 180 // pixels at 768×384; smaller regions are noise
 
@@ -71,14 +72,17 @@ function traceContour(mask: Uint8Array, w: number, h: number, start: number): [n
   return out
 }
 
-export function detectionsFromSegmentation(seg: SegOutput): ToothDetection[] {
+/** sx: horizontal stretch that makes the model grid's pixels square in the original image ((W/H) / 2). */
+export function detectionsFromSegmentation(seg: SegOutput, sx = 1): ToothDetection[] {
   const { width: w, height: h } = seg
   const regions = largestComponents(seg)
   const mask = new Uint8Array(w * h)
   const dets: ToothDetection[] = []
+  const axes = new Map<number, ToothAxis>()
   for (const r of regions) {
     const fdi = classToFdi(r.cls)
     const upper = fdi < 30
+    axes.set(fdi, toothAxis(r.pixels, w, sx, upper))
     let minX = w, maxX = 0, minY = h, maxY = 0
     let start = Infinity
     for (const i of r.pixels) {
@@ -118,7 +122,7 @@ export function detectionsFromSegmentation(seg: SegOutput): ToothDetection[] {
       score: Math.round(r.conf * 1000) / 1000,
     })
   }
-  return dets.sort((a, b) => a.fdi - b.fdi)
+  return attachPoses(dets, fitPoses(axes, w, h, sx)).sort((a, b) => a.fdi - b.fdi)
 }
 
 /** Occlusal plane from the model's teeth: least-squares quadratic through all occlusal points. */

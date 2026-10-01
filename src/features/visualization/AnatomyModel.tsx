@@ -80,6 +80,27 @@ function meshTilt(geo: THREE.BufferGeometry, tangent: THREE.Vector3): number {
   return imageTilt(pts, 1) ?? 0
 }
 
+const angleDiff = (a: number, b: number) => Math.atan2(Math.sin(a - b), Math.cos(a - b))
+
+/** Crown→apex angle of a reference tooth seen like on an OPG (same convention as ToothPose.theta). */
+function meshTheta(geo: THREE.BufferGeometry, tangent: THREE.Vector3, upper: boolean): number {
+  const pos = geo.attributes.position as THREE.BufferAttribute
+  let n = 0, mx = 0, my = 0, sxx = 0, syy = 0, sxy = 0
+  const v = new THREE.Vector3()
+  const pts: [number, number][] = []
+  for (let i = 0; i < pos.count; i += 3) {
+    v.fromBufferAttribute(pos, i)
+    const x = v.dot(tangent), y = -v.y
+    pts.push([x, y]); mx += x; my += y; n++
+  }
+  mx /= n; my /= n
+  for (const [x, y] of pts) { const dx = x - mx, dy = y - my; sxx += dx * dx; syy += dy * dy; sxy += dx * dy }
+  const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy)
+  let ux = Math.cos(ang), uy = Math.sin(ang)
+  if (uy < 0) { ux = -ux; uy = -uy }
+  return upper ? Math.atan2(-ux, uy) : Math.atan2(ux, uy)
+}
+
 export function AnatomyModel({ result }: { result: InferenceResult }) {
   const gltf = useGLTF(ANATOMY_URL)
   const layers = useMouthTwin((s) => s.layers)
@@ -194,17 +215,44 @@ export function AnatomyModel({ result }: { result: InferenceResult }) {
         const tangent = new THREE.Vector3().crossVectors(UP, out).normalize() // points patient right → left at the front
         if (det) {
           const len = refLen.get(fdi) as number
-          const s = THREE.MathUtils.clamp(det.bbox[3] / medOpg / (len / medRef), 0.85, 1.18)
           const pivotY = upper ? bb.min.y : bb.max.y // occlusal end stays in occlusion
-          const tImg = imageTilt(det.polygon as [number, number][], imgAspect)
-          const tRef = meshTilt(geo, tangent)
-          const dTilt = tImg === null ? 0 : THREE.MathUtils.clamp(0.7 * (tImg - tRef), -0.2, 0.2)
           const pivot = new THREE.Vector3(center.x, pivotY, center.z)
-          const mtx = new THREE.Matrix4()
-            .makeTranslation(pivot.x, pivot.y, pivot.z)
-            .multiply(new THREE.Matrix4().makeRotationAxis(out, dTilt))
-            .multiply(new THREE.Matrix4().makeScale(1, s, 1))
-            .multiply(new THREE.Matrix4().makeTranslation(-pivot.x, -pivot.y, -pivot.z))
+          const about = (rot: number, scale: number, drop: number) =>
+            new THREE.Matrix4()
+              .makeTranslation(pivot.x, pivot.y + (upper ? drop : -drop), pivot.z)
+              .multiply(new THREE.Matrix4().makeRotationAxis(out, rot))
+              .multiply(new THREE.Matrix4().makeScale(1, scale, 1))
+              .multiply(new THREE.Matrix4().makeTranslation(-pivot.x, -pivot.y, -pivot.z))
+          let mtx: THREE.Matrix4
+          if (det.pose) {
+            // differences from a typical OPG (population medians), transferred onto the reference tooth
+            const p = det.pose
+            // much shorter than usual and no root filling / implant: only the crown is there (developing or
+            // unerupted tooth, crown on a pontic) → draw the crown part instead of shrinking a full tooth
+            const treated = rs?.rootCanal || rs?.implant
+            const crownOnly = p.crownOnly && !treated
+            // sitting deep and short: an unerupted tooth whose root is not fully formed → keep the crown size,
+            // draw only the visible length
+            const partial = !crownOnly && !treated && ((p.depth > 0.25 && p.length < 0.92) || Boolean(p.partialRoot))
+            const s = crownOnly || partial ? 1 : THREE.MathUtils.clamp(p.length, 0.72, 1.35)
+            if (crownOnly) resto.uCut.value = THREE.MathUtils.clamp(p.length * len, crownH * 0.8, crownH * 1.4)
+            if (partial) resto.uCut.value = Math.max(crownH * 0.8, p.length * len)
+            if (crownOnly || partial) material.side = THREE.DoubleSide
+            const tilt = THREE.MathUtils.clamp(p.tilt, -1.6, 1.6)
+            const drop = THREE.MathUtils.clamp(p.depth * len, -6, 18) // mm toward the apex (impacted / unerupted)
+            // which rotation direction increases the projected angle for this tooth
+            const t0 = meshTheta(geo, tangent, upper)
+            const probe = geo.clone().applyMatrix4(about(0.1, 1, 0))
+            const sign = angleDiff(meshTheta(probe, tangent, upper), t0) >= 0 ? 1 : -1
+            probe.dispose()
+            mtx = about(sign * tilt, s, drop)
+          } else {
+            const s = THREE.MathUtils.clamp(det.bbox[3] / medOpg / (len / medRef), 0.85, 1.18)
+            const tImg = imageTilt(det.polygon as [number, number][], imgAspect)
+            const tRef = meshTilt(geo, tangent)
+            const dTilt = tImg === null ? 0 : THREE.MathUtils.clamp(0.7 * (tImg - tRef), -0.2, 0.2)
+            mtx = about(dTilt, s, 0)
+          }
           geo.applyMatrix4(mtx)
           geo.computeVertexNormals()
           geo.computeBoundingBox()
@@ -385,9 +433,9 @@ export function AnatomyModel({ result }: { result: InferenceResult }) {
         mm.depthWrite = mm.opacity > 0.6
       }
     }
-    built.boneMat.opacity = (isolating ? 0.08 : 0.24) * k
+    built.boneMat.opacity = (isolating ? 0.04 : 0.11) * k // blended in linear space (post-processing), so lower than it looks
     built.canalMat.opacity = (isolating ? 0.3 : 1) * k
-    built.sinusMat.opacity = (isolating ? 0.05 : 0.12) * k
+    built.sinusMat.opacity = (isolating ? 0.03 : 0.07) * k
     // hide labels of teeth on the far side of the arch (HTML labels are not depth-tested)
     for (const [fdi, el] of labelEls.current) {
       const a = toothAnchors.get(fdi)

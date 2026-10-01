@@ -50,6 +50,7 @@ export function addRestorationAttributes(geo: THREE.BufferGeometry, fdi: number)
   geo.setAttribute('aCap', new THREE.BufferAttribute(cap, 1))
   geo.setAttribute('aFill', new THREE.BufferAttribute(fill, 1))
   geo.setAttribute('aRoot', new THREE.BufferAttribute(root, 1))
+  geo.setAttribute('aDepth', new THREE.BufferAttribute(depth, 1))
   return depth
 }
 
@@ -57,6 +58,8 @@ export interface RestoUniforms {
   uCap: { value: number }
   uFill: { value: number }
   uRootAlpha: { value: number }
+  /** depth (mm from the occlusal end) beyond which the tooth is not drawn: crown-only teeth, e.g. developing wisdom teeth */
+  uCut: { value: number }
   uCapColor: { value: THREE.Color }
   uFillColor: { value: THREE.Color }
 }
@@ -69,6 +72,7 @@ export function makeRestoUniforms(): RestoUniforms {
     uCap: { value: 0 },
     uFill: { value: 0 },
     uRootAlpha: { value: 0 },
+    uCut: { value: 1e3 },
     uCapColor: { value: new THREE.Color(CAP_COLOR) },
     uFillColor: { value: new THREE.Color(FILL_COLOR) },
   }
@@ -81,17 +85,18 @@ export function patchToothMaterial(mat: THREE.MeshPhysicalMaterial, u: RestoUnif
     shader.vertexShader = shader.vertexShader
       .replace(
         '#include <common>',
-        '#include <common>\nattribute float aCap;\nattribute float aFill;\nattribute float aRoot;\nvarying float vCap;\nvarying float vFill;\nvarying float vRoot;',
+        '#include <common>\nattribute float aCap;\nattribute float aFill;\nattribute float aRoot;\nattribute float aDepth;\nvarying float vCap;\nvarying float vFill;\nvarying float vRoot;\nvarying float vDepth;',
       )
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCap = aCap; vFill = aFill; vRoot = aRoot;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCap = aCap; vFill = aFill; vRoot = aRoot; vDepth = aDepth;')
     shader.fragmentShader = shader.fragmentShader
       .replace(
         '#include <common>',
-        '#include <common>\nvarying float vCap;\nvarying float vFill;\nvarying float vRoot;\nuniform float uCap;\nuniform float uFill;\nuniform float uRootAlpha;\nuniform vec3 uCapColor;\nuniform vec3 uFillColor;',
+        '#include <common>\nvarying float vCap;\nvarying float vFill;\nvarying float vRoot;\nvarying float vDepth;\nuniform float uCut;\nuniform float uCap;\nuniform float uFill;\nuniform float uRootAlpha;\nuniform vec3 uCapColor;\nuniform vec3 uFillColor;',
       )
       .replace(
         '#include <color_fragment>',
         `#include <color_fragment>
+        if (vDepth > uCut) discard;
         float capM = smoothstep(0.42, 0.58, vCap) * uCap;
         float fillM = smoothstep(0.35, 0.65, vFill) * uFill;
         float rim = smoothstep(0.12, 0.42, vCap) * (1.0 - smoothstep(0.42, 0.62, vCap)) * uCap;

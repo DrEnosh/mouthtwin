@@ -28,6 +28,32 @@ export interface ToothDetection {
   score?: number | null
   /** Treatments the model sees on this tooth. Absent when the provider does not look for them. */
   restorations?: ToothRestorations
+  /** How this tooth sits compared with the same tooth on a typical OPG. Only from the trained model. */
+  pose?: ToothPose
+}
+
+/**
+ * Tooth position relative to a typical OPG (population medians from 634 clinician-labelled DENTEX OPGs).
+ * Deviations already have measurement noise removed; 0 / 1 means "as usual".
+ */
+export interface ToothPose {
+  /** crown end and root apex along the tooth's long axis, normalised image coords */
+  crown: NormPoint
+  apex: NormPoint
+  /** long-axis angle (rad) on the image, crown→apex, from the jaw's usual apex direction; + = apex toward image right */
+  theta: number
+  /** extra tilt (rad) compared with the same tooth on a typical OPG, same sign as theta */
+  tilt: number
+  /** length compared with typical (1 = typical) */
+  length: number
+  /** how much deeper (+) or higher (−) the crown sits than usual, as a fraction of the tooth's length */
+  depth: number
+  /** only a crown-shaped region is visible (no root length), e.g. a developing or unerupted tooth or a pontic */
+  crownOnly: boolean
+  /** third molar clearly shorter than a formed one: root probably still developing */
+  partialRoot?: boolean
+  /** how unusual each measure is, in robust standard deviations */
+  z: { tilt: number; length: number; depth: number }
 }
 
 /**

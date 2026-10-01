@@ -1,7 +1,7 @@
 import { OPG_ORDER_LOWER, OPG_ORDER_UPPER, toothRef, type ToothRef } from '../../data/fdi'
 import { useMouthTwin } from '../../store/useMouthTwin'
 import { describeRestorations } from '../pipeline/model/restorations'
-import type { InferenceResult, InferenceSource, ToothDetection, ToothRestorations } from '../../types/inference'
+import type { InferenceResult, InferenceSource, ToothDetection, ToothPose, ToothRestorations } from '../../types/inference'
 
 const SOURCE_TEXT: Record<InferenceSource, { title: string; body: string }> = {
   'precomputed-demo': {
@@ -225,6 +225,7 @@ function ToothDetail({ tooth, det, result }: { tooth: ToothRef; det: ToothDetect
       )}
 
       <ToothFindings r={det.restorations} />
+      {det.pose && <ToothPosition fdi={det.fdi} pose={det.pose} lengthMm={(tooth.crownMm ?? 0) + (tooth.rootMm ?? 0)} />}
 
       <section>
         <p className="label mb-2">Pipeline</p>
@@ -232,7 +233,7 @@ function ToothDetail({ tooth, det, result }: { tooth: ToothRef; det: ToothDetect
           <Status label="Detected" detail={method('detect')} />
           <Status label="Segmentation" detail={det.polygon.length ? method('segment') : 'Not available'} ok={det.polygon.length > 0} />
           <Status label="Numbering" detail={method('number')} />
-          <Status label="3D" detail="Real CBCT tooth shape, length and tilt fitted to this X-ray" />
+          <Status label="3D" detail={det.pose ? "Real CBCT tooth shape; tilt, depth and length moved to match this X-ray" : "Real CBCT tooth shape, length and tilt fitted to this X-ray"} />
         </ul>
       </section>
 
@@ -275,6 +276,59 @@ function ToothDetail({ tooth, det, result }: { tooth: ToothRef; det: ToothDetect
         </span>
       </section>
     </>
+  )
+}
+
+/** Plain description of how this tooth sits compared with the same tooth on a typical OPG. */
+export function describePosition(fdi: number, p: ToothPose, lengthMm: number): string[] {
+  const out: string[] = []
+  const q = Math.floor(fdi / 10)
+  if (p.crownOnly) out.push('Only a crown-shaped outline is visible, with no root length. Drawn as a crown.')
+  else if (p.partialRoot) out.push('Shorter than a fully formed third molar. Drawn with a short root.')
+  const mm = Math.round(Math.abs(p.depth) * (lengthMm || 21))
+  if (mm >= 2) {
+    out.push(
+      p.depth > 0
+        ? `Crown sits about ${mm} mm ${q <= 2 ? 'above' : 'below'} the bite line of the other teeth (deeper in the bone).`
+        : `Crown sits about ${mm} mm past the bite line of the other teeth.`,
+    )
+  }
+  const deg = Math.round((Math.abs(p.tilt) * 180) / Math.PI)
+  if (deg >= 5) {
+    // tilt > 0: apex toward image right. Image right is mesial for quadrants 1 and 4 (patient's right side).
+    const apexRight = p.tilt > 0
+    const mesialRight = q === 1 || q === 4
+    const crown = apexRight === mesialRight ? 'distally' : 'mesially'
+    out.push(`Tipped ${crown} about ${deg}° more than this tooth usually looks.`)
+  }
+  if (!p.crownOnly && !p.partialRoot && Math.abs(p.length - 1) >= 0.08) {
+    out.push(`Looks about ${Math.round(Math.abs(p.length - 1) * 100)}% ${p.length > 1 ? 'longer' : 'shorter'} than usual.`)
+  }
+  return out
+}
+
+function ToothPosition({ fdi, pose, lengthMm }: { fdi: number; pose: ToothPose; lengthMm: number }) {
+  const items = describePosition(fdi, pose, lengthMm)
+  return (
+    <section>
+      <p className="label mb-2">Position on this X-ray</p>
+      {items.length ? (
+        <ul className="flex flex-col gap-1.5 text-[12.5px]">
+          {items.map((i) => (
+            <li key={i} className="flex gap-2.5">
+              <span className="text-accent">●</span>
+              <span className="text-ink">{i}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-[12.5px] text-muted">Sits like this tooth usually does on an OPG.</p>
+      )}
+      <p className="mt-2 text-[11.5px] leading-snug text-faint">
+        Compared with the same tooth on 634 expert-labelled OPGs. The 3D tooth is moved by the same amount. An OPG
+        distorts angles and sizes, so treat these as rough.
+      </p>
+    </section>
   )
 }
 
