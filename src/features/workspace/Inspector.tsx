@@ -1,6 +1,7 @@
 import { OPG_ORDER_LOWER, OPG_ORDER_UPPER, toothRef, type ToothRef } from '../../data/fdi'
 import { useMouthTwin } from '../../store/useMouthTwin'
-import type { InferenceResult, InferenceSource, ToothDetection } from '../../types/inference'
+import { describeRestorations } from '../pipeline/model/restorations'
+import type { InferenceResult, InferenceSource, ToothDetection, ToothRestorations } from '../../types/inference'
 
 const SOURCE_TEXT: Record<InferenceSource, { title: string; body: string }> = {
   'precomputed-demo': {
@@ -13,7 +14,7 @@ const SOURCE_TEXT: Record<InferenceSource, { title: string; body: string }> = {
   },
   model: {
     title: 'Tooth model · runs in your browser',
-    body: 'Outlines and FDI numbers are predicted by a U-Net trained on the public DENTEX dataset (Hamamci et al., MICCAI 2023, CC BY-NC-SA 4.0). The 3D teeth and jaws come from one expert-labelled ToothFairy2 CBCT (CC BY-SA 4.0), with teeth removed, lengthened or tilted to match this X-ray. Scores are the model’s own confidence, not clinical accuracy.',
+    body: 'Outlines and FDI numbers are predicted by a U-Net trained on the public DENTEX dataset (Hamamci et al., MICCAI 2023, CC BY-NC-SA 4.0). The same model also flags crowns, fillings, root-canal fillings and implants (trained on the Cluj panoramic dataset, CC BY 4.0), which are drawn on the 3D teeth. The 3D teeth and jaws come from one expert-labelled ToothFairy2 CBCT (CC BY-SA 4.0), with teeth removed, lengthened or tilted to match this X-ray. Scores are the model’s own confidence, not clinical accuracy.',
   },
 }
 
@@ -27,7 +28,7 @@ export function Inspector() {
     <div className="flex flex-col gap-6 p-4">
       {selected !== null && det ? (
         audience === 'patient' ? (
-          <PatientTooth tooth={toothRef(selected)} />
+          <PatientTooth tooth={toothRef(selected)} r={det.restorations} />
         ) : (
           <ToothDetail tooth={toothRef(selected)} det={det} result={result} />
         )
@@ -42,6 +43,14 @@ export function Inspector() {
 
 function Odontogram({ result }: { result: InferenceResult }) {
   const present = new Set(result.teeth.map((t) => t.fdi))
+  const marks = new Map<number, string>()
+  for (const t of result.teeth) {
+    const r = t.restorations
+    if (!r) continue
+    const m = [r.implant ? 'I' : '', r.crown?.kind === 'cap' ? 'C' : r.crown ? 'F' : '', r.rootCanal ? 'R' : ''].join('')
+    if (m) marks.set(t.fdi, m)
+  }
+  for (const im of result.implants ?? []) if (im.slot !== null && !present.has(im.slot)) marks.set(im.slot, 'I')
   const selected = useMouthTwin((s) => s.selectedFdi)
   const hovered = useMouthTwin((s) => s.hoveredFdi)
   const select = useMouthTwin((s) => s.select)
@@ -59,8 +68,8 @@ function Odontogram({ result }: { result: InferenceResult }) {
             onClick={() => select(isSel ? null : fdi)}
             onPointerEnter={() => hover(fdi)}
             onPointerLeave={() => hover(null)}
-            title={on ? `${fdi} · ${toothRef(fdi).name}` : `${fdi} · not mapped`}
-            className={`h-7 rounded-[3px] font-mono text-[9.5px] tabular transition ${i === 7 ? 'mr-[3px]' : ''} ${
+            title={`${on ? `${fdi} · ${toothRef(fdi).name}` : `${fdi} · not mapped`}${marks.has(fdi) ? ` · ${marks.get(fdi)}` : ''}`}
+            className={`relative h-7 rounded-[3px] font-mono text-[9.5px] tabular transition ${i === 7 ? 'mr-[3px]' : ''} ${
               isSel
                 ? 'bg-accent text-ground'
                 : isHov
@@ -71,6 +80,11 @@ function Odontogram({ result }: { result: InferenceResult }) {
             }`}
           >
             {fdi}
+            {marks.has(fdi) && (
+              <span className="pointer-events-none absolute -right-px -top-1 rounded-sm bg-[#b9c3cf] px-[2px] text-[7px] font-semibold leading-[9px] text-[#101418]">
+                {marks.get(fdi)}
+              </span>
+            )}
           </button>
         )
       })}
@@ -84,6 +98,9 @@ function Odontogram({ result }: { result: InferenceResult }) {
         <span>L</span>
       </div>
       {row(OPG_ORDER_LOWER)}
+      {marks.size > 0 && (
+        <p className="mt-1 font-mono text-[9.5px] leading-snug text-faint">C crown/cap · F filling · R root-canal filling · I implant</p>
+      )}
     </div>
   )
 }
@@ -104,6 +121,7 @@ function CaseSummary({ result }: { result: InferenceResult }) {
         </div>
         <Odontogram result={result} />
       </section>
+      <Findings result={result} />
       <section className="flex flex-col gap-2">
         <p className="label">Imaging</p>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[12.5px]">
@@ -206,6 +224,8 @@ function ToothDetail({ tooth, det, result }: { tooth: ToothRef; det: ToothDetect
         </section>
       )}
 
+      <ToothFindings r={det.restorations} />
+
       <section>
         <p className="label mb-2">Pipeline</p>
         <ul className="flex flex-col gap-1.5 text-[12.5px]">
@@ -258,6 +278,72 @@ function ToothDetail({ tooth, det, result }: { tooth: ToothRef; det: ToothDetect
   )
 }
 
+function ToothFindings({ r }: { r?: ToothRestorations }) {
+  const items = describeRestorations(r)
+  if (!r) return null
+  return (
+    <section>
+      <p className="label mb-2">Seen on this X-ray</p>
+      {items.length ? (
+        <ul className="flex flex-col gap-1.5 text-[12.5px]">
+          {items.map((i) => (
+            <li key={i} className="flex gap-2.5">
+              <span className="text-accent">●</span>
+              <span className="text-ink">{i}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-[12.5px] text-muted">No crown, filling or root-canal filling flagged.</p>
+      )}
+      <p className="mt-2 text-[11.5px] leading-snug text-faint">
+        Found from how dense the tooth looks and the model’s restoration maps. The 3D shows a generic version; the X-ray can’t tell material, fit or quality.
+      </p>
+    </section>
+  )
+}
+
+function tally(result: InferenceResult) {
+  let caps = 0, fills = 0, rct = 0, implants = result.implants?.length ?? 0
+  const bridges = new Set<number>()
+  for (const t of result.teeth) {
+    const r = t.restorations
+    if (!r) continue
+    if (r.crown?.kind === 'cap') caps++
+    else if (r.crown) fills++
+    if (r.rootCanal) rct++
+    if (r.implant) implants++
+    if (r.bridgeId) bridges.add(r.bridgeId)
+  }
+  return { caps, fills, rct, implants, bridges: bridges.size }
+}
+
+function Findings({ result }: { result: InferenceResult }) {
+  if (!result.teeth.some((t) => t.restorations) && !result.implants) return null
+  const t = tally(result)
+  const rows: [string, number][] = [
+    ['Crowns / caps', t.caps],
+    ['Fillings', t.fills],
+    ['Root-canal fillings', t.rct],
+    ['Implants', t.implants],
+    ['Bridges (joined crowns)', t.bridges],
+  ]
+  return (
+    <section className="flex flex-col gap-2">
+      <p className="label">Seen on the X-ray</p>
+      <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 text-[12.5px]">
+        {rows.map(([k, n]) => (
+          <div key={k} className="contents">
+            <dt className={n ? 'text-ink' : 'text-faint'}>{k}</dt>
+            <dd className={`font-mono tabular ${n ? 'text-ink' : 'text-faint'}`}>{n}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="text-[11.5px] leading-snug text-faint">Drawn on the 3D teeth with their own materials. Detected by the model from the picture, so it can miss or over-call.</p>
+    </section>
+  )
+}
+
 function Status({ label, detail, ok = true }: { label: string; detail: string; ok?: boolean }) {
   return (
     <li className="flex gap-2.5">
@@ -307,6 +393,7 @@ function PatientSummary({ result }: { result: InferenceResult }) {
           </div>
         ))}
       </section>
+      <PatientFindings result={result} />
       <section>
         <Odontogram result={result} />
       </section>
@@ -318,7 +405,25 @@ function PatientSummary({ result }: { result: InferenceResult }) {
   )
 }
 
-function PatientTooth({ tooth }: { tooth: ToothRef }) {
+function PatientFindings({ result }: { result: InferenceResult }) {
+  const t = tally(result)
+  const parts = [
+    t.caps ? `${t.caps} crown${t.caps > 1 ? 's' : ''} or cap${t.caps > 1 ? 's' : ''}` : '',
+    t.fills ? `${t.fills} filling${t.fills > 1 ? 's' : ''}` : '',
+    t.rct ? `${t.rct} root-canal-treated tooth${t.rct > 1 ? ' teeth' : ''}`.replace('tooth teeth', 'teeth') : '',
+    t.implants ? `${t.implants} implant${t.implants > 1 ? 's' : ''}` : '',
+  ].filter(Boolean)
+  if (!result.teeth.some((x) => x.restorations) && !result.implants) return null
+  return (
+    <section>
+      <p className="label mb-2">Dental work that shows up</p>
+      <p className="text-[13.5px] leading-relaxed text-ink">{parts.length ? parts.join(', ') + '.' : 'None spotted.'}</p>
+      <p className="mt-1 text-[12px] leading-relaxed text-faint">In 3D, crowns look metallic, root-canal fillings glow inside the root, and implants look like screws. It is an automatic guess from the picture.</p>
+    </section>
+  )
+}
+
+function PatientTooth({ tooth, r }: { tooth: ToothRef; r?: ToothRestorations }) {
   const select = useMouthTwin((s) => s.select)
   return (
     <>
@@ -333,6 +438,11 @@ function PatientTooth({ tooth }: { tooth: ToothRef }) {
         </button>
       </section>
       <p className="text-[14px] leading-relaxed text-ink">{tooth.friendlyRole}</p>
+      {describeRestorations(r).length > 0 && (
+        <p className="rounded-md border border-line bg-panel-2 px-3 py-2 text-[13px] text-ink">
+          On the X-ray this tooth shows: {describeRestorations(r).join(', ').toLowerCase()}.
+        </p>
+      )}
       <section>
         <p className="label mb-2">Explore</p>
         <ul className="flex flex-col gap-1.5 text-[13px] text-ink">

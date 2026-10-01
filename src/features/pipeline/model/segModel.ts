@@ -3,7 +3,7 @@
  *
  * Model: U-Net (MobileNetV2 encoder) trained on DENTEX (Hamamci et al., MICCAI 2023, CC BY-NC-SA 4.0).
  * Input: 1×1×384×768 greyscale 0..1. Outputs: per-pixel label (0 = background, 1..32 = FDI class),
- * tooth probability and label confidence. The image never leaves the browser.
+ * tooth probability, label confidence and (round-2 model) four restoration probability planes. The image never leaves the browser.
  */
 import type * as OrtNs from 'onnxruntime-web/wasm'
 import { PipelineError } from '../errors'
@@ -20,6 +20,10 @@ export interface SegOutput {
   labels: Uint8Array
   fg: Float32Array
   conf: Float32Array
+  /** 4 planes (implant, prosthetic restoration, filling, root-canal treatment), 0..255. Absent for tooth-only models. */
+  rest?: Uint8Array
+  /** The greyscale image the model saw (0..1, 384×768). */
+  input?: Float32Array
 }
 
 let sessionPromise: Promise<{ ort: typeof OrtNs; session: OrtNs.InferenceSession }> | null = null
@@ -72,6 +76,8 @@ export async function segmentTeeth(image: LoadedImage): Promise<SegOutput> {
     labels: out.labels.data as Uint8Array,
     fg: out.fg.data as Float32Array,
     conf: out.conf.data as Float32Array,
+    rest: out.rest ? (out.rest.data as Uint8Array) : undefined,
+    input,
   }
 }
 

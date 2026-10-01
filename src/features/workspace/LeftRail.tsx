@@ -2,6 +2,7 @@ import { useMouthTwin, type AudienceMode, type Layers } from '../../store/useMou
 
 const LAYER_ROWS: { key: keyof Layers; label: string; swatch: string; tag: string }[] = [
   { key: 'teeth', label: 'Teeth', swatch: 'var(--color-enamel)', tag: 'Fitted' },
+  { key: 'restorations', label: 'Crowns, canals, implants', swatch: '#b7c2cc', tag: 'From X-ray' },
   { key: 'bone', label: 'Jaw bone', swatch: '#b9c4cc', tag: 'Reference' },
   { key: 'canals', label: 'Nerve canals', swatch: 'var(--color-nerve)', tag: 'Reference' },
   { key: 'sinus', label: 'Maxillary sinuses', swatch: '#7fb6c9', tag: 'Reference' },

@@ -8,6 +8,7 @@ import { estimateOcclusalPlane } from './stages/occlusalPlane'
 import { preprocess } from './stages/preprocess'
 import { detectionsFromSegmentation, occlusalCurveFrom } from './model/postprocess'
 import { segmentTeeth, type SegOutput } from './model/segModel'
+import { analyseRestorations } from './model/restorations'
 
 export interface ProviderStage {
   id: PipelineStageId
@@ -121,11 +122,11 @@ export const modelProvider: InferenceProvider = {
   label: 'MouthTwin tooth model (in your browser)',
   stages: [
     { id: 'preprocess', label: 'Normalising image', method: 'Resize to 768×384, greyscale' },
-    { id: 'detect', label: 'Detecting teeth', method: 'U-Net (MobileNetV2) trained on 574 DENTEX OPGs' },
+    { id: 'detect', label: 'Detecting teeth', method: 'U-Net (MobileNetV2) trained on DENTEX + Cluj OPGs' },
     { id: 'number', label: 'Assigning FDI numbers', method: 'Per-pixel FDI class (32 teeth), largest region per tooth' },
     { id: 'segment', label: 'Segmenting tooth outlines', method: 'Model mask, traced outline' },
-    { id: 'map', label: 'Mapping teeth to the arch', method: 'Panoramic position → average arch template' },
-    { id: 'visualize', label: 'Building interactive model', method: 'Real CBCT anatomy (ToothFairy2) fitted tooth by tooth' },
+    { id: 'map', label: 'Finding crowns, root canals, implants', method: 'Restoration maps of the same model + radiopacity inside each tooth outline' },
+    { id: 'visualize', label: 'Building interactive model', method: 'Real CBCT anatomy (ToothFairy2) fitted tooth by tooth, restorations drawn where found' },
   ],
   async run(image) {
     let seg: SegOutput
@@ -138,7 +139,8 @@ export const modelProvider: InferenceProvider = {
       }
       throw e
     }
-    const teeth = detectionsFromSegmentation(seg)
+    const found = detectionsFromSegmentation(seg)
+    const { teeth, implants } = analyseRestorations(seg, found)
     if (teeth.length < 4) {
       throw new PipelineError(
         'no-teeth',
@@ -153,8 +155,9 @@ export const modelProvider: InferenceProvider = {
       image: { width: image.width, height: image.height, modality: 'OPG', fileName: image.fileName, fileSizeBytes: image.fileSizeBytes },
       occlusalCurve: occlusalCurveFrom(teeth) ?? estimateOcclusalPlane(preprocess(image)).curve,
       teeth,
+      implants: seg.rest ? implants : undefined,
       stages: report(this.stages),
-      segmentation: { width: seg.width, height: seg.height, labels: seg.labels, fg: seg.fg },
+      segmentation: { width: seg.width, height: seg.height, labels: seg.labels, fg: seg.fg, rest: seg.rest },
     }
   },
 }

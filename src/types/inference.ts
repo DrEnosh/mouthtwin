@@ -26,6 +26,36 @@ export interface ToothDetection {
   apex?: NormPoint
   /** Model score in 0..1. Only a trained model may set this. Heuristics and demo data leave it null. */
   score?: number | null
+  /** Treatments the model sees on this tooth. Absent when the provider does not look for them. */
+  restorations?: ToothRestorations
+}
+
+/**
+ * What the X-ray shows on a tooth. These come from the restoration heads of the tooth model plus a radiopacity
+ * check inside the tooth outline. They describe the picture, not the material or the quality of the work.
+ */
+export interface ToothRestorations {
+  /**
+   * Bright (radiopaque) restoration on the crown. `cap`: covers most of the crown (crown / cap / large restoration).
+   * `filling`: covers part of it. `coverage` is the fraction of the crown area, 0..1.
+   */
+  crown?: { kind: 'cap' | 'filling'; coverage: number }
+  /** Root-canal filling seen in the root. `coverage` is the fraction of the root area flagged. */
+  rootCanal?: { coverage: number }
+  /** The tooth carries an implant fixture (the tooth outline is an implant crown). */
+  implant?: boolean
+  /** Same id on teeth whose crowns are joined into one radiopaque block (bridge or splinted crowns). */
+  bridgeId?: number
+}
+
+/** An implant fixture with no tooth outline of its own. `slot` is the FDI position it most likely replaces. */
+export interface ImplantDetection {
+  /** [x, y, width, height], normalised. */
+  bbox: [number, number, number, number]
+  /** FDI position of the missing tooth it stands in (estimated from the neighbouring teeth), or null. */
+  slot: number | null
+  /** Radiopaque crown seen on top of it. */
+  crowned: boolean
 }
 
 export interface ImageMeta {
@@ -63,6 +93,8 @@ export interface InferenceResult {
   /** Occlusal plane as y = a·x² + b·x + c in normalised coordinates. */
   occlusalCurve?: { a: number; b: number; c: number }
   teeth: ToothDetection[]
+  /** Implants the model sees where no tooth was outlined. */
+  implants?: ImplantDetection[]
   stages: StageReport[]
   /** Per-pixel model output (runtime only, not part of the JSON contract). Labels are classes 0..32. */
   segmentation?: {
@@ -70,6 +102,8 @@ export interface InferenceResult {
     height: number
     labels: Uint8Array
     fg: Float32Array
+    /** Restoration probabilities (0..255) as 4 planes: implant, prosthetic restoration, filling, root-canal treatment. */
+    rest?: Uint8Array
   }
 }
 

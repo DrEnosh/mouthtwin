@@ -4,14 +4,15 @@ MouthTwin takes a panoramic dental X-ray (OPG) and turns it into an interactive,
 
 ## The one idea the whole product rests on
 
-A panoramic machine rotates around the head and images a curved slab of tissue (the focal trough) that follows the dental arch. The flat OPG is that arch **unrolled**. MouthTwin rolls it back up, using the uploaded image itself as the model:
+A panoramic machine rotates around the head and images a curved slab of tissue that follows the dental arch. The flat OPG is that arch **unrolled**. MouthTwin rolls it back up in three steps:
 
-1. `reliefAnalysis.ts` finds tooth pixels (brightest structures around the occlusal plane, kept only if they reach it) and bone pixels, directly in the uploaded image.
-2. Thickness is estimated: teeth get thicker toward their middle (distance from the tooth edge) and where they are brighter. Bone thickness follows brightness.
-3. `Relief.tsx` extrudes both into closed shells, front and back, and bends them onto an average arch curve. Outline vertices are moved to the sub-pixel edge so outlines aren't stair-stepped.
-4. The X-ray is painted onto the surfaces, so fillings, canals and trabecular pattern stay visible.
+1. **Read the X-ray.** A U-Net runs in the browser (ONNX Runtime Web) and outlines every tooth with its FDI number. The same network has four extra output maps for what dentists have put in the mouth: implants, prosthetic restorations (crowns, caps, bridges), fillings and root-canal fillings. `postprocess.ts` turns the tooth map into per-tooth detections. `restorations.ts` combines the restoration maps with the radiopacity inside each tooth outline into per-tooth findings.
+2. **Fit real anatomy.** Teeth, jaw bone, nerve canals and sinuses come from one expert-labelled CBCT (ToothFairy2). Teeth the OPG does not show are hidden; the others are scaled to the OPG length and tilted to the OPG angle (`AnatomyModel.tsx`).
+3. **Draw the dental work.** Where the X-ray shows it, the 3D tooth gets a metallic crown cap, an occlusal filling patch, a translucent root with a glowing canal filling, an implant screw (with a crown if one is seen) or a bar joining bridged crowns (`restorationGeometry.ts`).
 
-What is exactly from the image: every outline (crowns, roots, gaps, restorations, bone margins) and the surface shading. What is estimated: thickness (an OPG has no depth) and the arch curve (population average). Average tooth shapes are still available as a "Reference shapes" layer.
+What is exactly from the image: which teeth exist, their outline, length, tilt, and which of them carry a radiopaque restoration or canal filling. What is generic: crown and root shape, the arch, the bone, and how a cap, filling, canal or implant looks (the X-ray cannot tell material or exact shape). Depth is never measured. The UI says so.
+
+The older "X-ray relief" layer (the image extruded by brightness, `Relief.tsx`) is still available as an optional layer.
 
 ## A. Product architecture
 
@@ -19,7 +20,7 @@ What is exactly from the image: every outline (crowns, roots, gaps, restorations
 | --- | --- |
 | Landing | What this is, **Run MouthTwin** (demo) and **Upload OPG**. Drag-and-drop anywhere. |
 | Processing | About 5 s: scan sweep, detection brackets, FDI numbers, outlines drawing on, occlusal curve. The stage list shows how each stage was actually produced. |
-| Workspace | Image / Model / Split views, layer rail, tooth inspector, lens bar (Anatomy, Surface, Roots, Cross section*, Timeline*). |
+| Workspace | Image / Model / Split views, layer rail, tooth inspector (including what the X-ray shows on the tooth), lens bar (Anatomy, Teeth only, X-ray relief, Cross section*, Timeline*). |
 
 \* Cross section is planned for Phase 5 and Timeline for Phase 6.
 
@@ -75,28 +76,26 @@ Design tokens are in `src/index.css`: reading-room near-black, a single pale fil
 
 ## D. Dataset and model strategy
 
-What is real today: file validation, image decoding, contrast check, occlusal-plane estimation (row-intensity minima plus a quadratic fit), template placement and the whole visualization layer.
+The tooth model is trained on public data (see `ml/README.md`):
 
-What is simulated: tooth detection, numbering and segmentation. For the demo they come from the generator's ground truth. For uploads they come from the template, which assumes a full adult dentition.
+| Job | Data | Licence |
+| --- | --- | --- |
+| Tooth outlines + FDI numbers | DENTEX quadrant-enumeration (634 OPGs, full clinician labels) | CC BY-NC-SA 4.0 |
+| Harder cases: caries, periapical lesions, impacted teeth | DENTEX disease set (705 OPGs, only diseased teeth outlined; clinician outlines kept, the rest filled by the round-1 model) and 1,571 unlabelled DENTEX OPGs (teacher labels, uncertain pixels ignored) | CC BY-NC-SA 4.0 |
+| Crowns, fillings, root canals, implants | Cluj panoramic condition dataset (1,808 clinic OPGs, boxes) | CC BY 4.0, non-commercial research and education |
+| 3D anatomy | ToothFairy2 CBCT label volume (one case) | CC BY-SA 4.0 |
 
-Candidates for Phase 8 (check each licence first; several are research-only or non-commercial):
+Restoration labels are bounding boxes, so the restoration maps are box-like. Per tooth, a crown is only reported when the model flags it and the crown pixels are clearly denser than the tooth's usual grey; a filling when only part of the crown is; a root-canal filling when the root is flagged.
 
-| Need | Candidates |
-| --- | --- |
-| Tooth instance segmentation + FDI numbering on OPGs | DENTEX (MICCAI 2023), Tufts Dental Database, OdontoAI / O²PR, UFBA-UESC dental images |
-| Detection backbone | Your OralGuard YOLOv8 detector → add a numbering head, or YOLOv8-seg / Mask R-CNN fine-tuned on DENTEX quadrant-enumeration labels |
-| 3D tooth shape priors | Teeth3DS (3DTeethSeg '22 intraoral scans): replace the lathe templates with per-type mean meshes |
-| Mandibular canal and 3D bone | ToothFairy / ToothFairy2 (CBCT): canal and jaw priors. Patient-specific 3D still needs CBCT. |
+Not used: AU-OPG (HF `YSFF/AU-OPG`, 901 OPGs with per-tooth crown/implant/root-canal labels) has no licence stated. It would help crowns most; use it only with the authors' permission.
 
-Place real assets like this:
+Where assets go:
 
 ```
-server/models/             model weights (.pt / .onnx), loaded by server/main.py
-data/images/               training OPGs          (not bundled with the app)
-data/masks/                per-tooth masks
-data/annotations/          COCO or DENTEX JSON
-data/metadata/             per-image metadata (no identifiers)
-src/data/demo/             the demo OPG + demo-inference.json bundled into the app
+public/models/mouthtwin-teeth.onnx      tooth + restoration model (browser)
+public/models/reference-anatomy.glb     CBCT-derived anatomy
+server/models/                          weights for the optional remote server
+ml/                                     training code and results
 ```
 
 ## E. MVP plan
@@ -105,12 +104,14 @@ src/data/demo/             the demo OPG + demo-inference.json bundled into the a
 | --- | --- | --- |
 | 1 | Shell, landing, upload + validation, demo mode, processing reveal, workspace, 3D arch | Done |
 | 2 | Hover, select, isolate, camera fly-to, FDI chips, odontogram | Done |
-| 3 | Layers: crowns, roots, bone, gingiva, canal | Done (conceptual meshes) |
+| 3 | Layers: teeth, bone, nerve canals, sinuses, restorations | Done (real CBCT reference meshes) |
 | 4 | Split view, image ↔ model mapping, link line | Done |
 | 5 | Cross-section: slice plane through the selected tooth plus a 2D section panel with a depth slider | Next |
 | 6 | Timeline: two demo timepoints, aligned OPGs, before/after slider, "visual comparison" labelling | Planned |
 | 7 | Polish: end card for recordings, tuned easing, sound-free 30 s auto-demo | Planned |
-| 8 | Real inference via `server/` (YOLOv8-seg + FDI numbering), missing-tooth handling | Planned |
+| 8 | Tooth model in the browser (DENTEX), real CBCT anatomy fitted to the OPG | Done |
+| 9 | Crowns, fillings, root canals, implants, bridges detected and drawn | Done |
+| 10 | Patient-specific 3D shape (needs CBCT or a learned shape prior) | Not started |
 
 ## F. Folder structure
 
@@ -136,7 +137,7 @@ docs/ARCHITECTURE.md
 
 ## Known limitations
 
-- A single OPG has no reliable depth, and magnification varies across the image. Arch shape, tooth depth and bone are template values.
-- The upload path assumes 32 teeth, centred in the image. Missing, impacted or rotated teeth are not detected until a real model is connected.
+- A single OPG has no reliable depth, and magnification varies across the image. Arch shape, tooth depth, root shape and bone are reference values from one CBCT.
+- Restoration findings come from a model trained on boxes from one clinic's data. Crown vs filling is decided by how much of the crown is radiopaque; material, margins and quality are not judged. Bridges are inferred when neighbouring crowns form one radiopaque block. Crowded, rotated or overlapping teeth, poor-quality X-rays and unusual anatomy still cause errors, see the measured numbers in the README.
 - Primary and mixed dentition are not supported.
-- DICOM input is not supported yet. Export the OPG as JPEG or PNG.
+- DICOM input is not supported. Export the OPG as JPEG or PNG.
