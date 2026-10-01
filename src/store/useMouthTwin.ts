@@ -20,12 +20,14 @@ export interface Layers {
   sinus: boolean
   /** The OPG itself pushed into 3D (brightness relief) */
   relief: boolean
+  /** Crowns, fillings, root-canal fillings, implants and bridges found on the OPG, drawn on the 3D teeth */
+  restorations: boolean
 }
 
 const LENS_LAYERS: Record<'anatomy' | 'teeth' | 'xray', Layers> = {
-  anatomy: { teeth: true, bone: true, canals: true, sinus: true, relief: false },
-  teeth: { teeth: true, bone: false, canals: false, sinus: false, relief: false },
-  xray: { teeth: false, bone: false, canals: false, sinus: false, relief: true },
+  anatomy: { teeth: true, bone: true, canals: true, sinus: true, relief: false, restorations: true },
+  teeth: { teeth: true, bone: false, canals: false, sinus: false, relief: false, restorations: true },
+  xray: { teeth: false, bone: false, canals: false, sinus: false, relief: true, restorations: false },
 }
 
 interface State {
@@ -82,7 +84,7 @@ export const useMouthTwin = create<State>((set, get) => ({
   view: 'model',
   audience: 'clinical',
   lens: 'anatomy',
-  layers: { teeth: true, bone: true, canals: true, sinus: false, relief: false },
+  layers: { teeth: true, bone: true, canals: true, sinus: false, relief: false, restorations: true },
   showNumbers: false,
   showMapping: true,
   isolate: true,
@@ -129,3 +131,6 @@ export const useMouthTwin = create<State>((set, get) => ({
   setAutoRotate: (autoRotate) => set({ autoRotate }),
   resetCamera: () => set((s) => ({ cameraResetKey: s.cameraResetKey + 1, selectedFdi: null })),
 }))
+
+// exposed for automated visual checks
+if (typeof window !== 'undefined') (window as unknown as { __mtStore: unknown }).__mtStore = useMouthTwin

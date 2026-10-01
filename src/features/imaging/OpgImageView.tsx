@@ -157,9 +157,53 @@ export function OpgImageView({ url, result, overlay, sweep = 0, interactive = fa
                 >
                   {d.fdi}
                 </text>
+                {(() => {
+                  const r = d.restorations
+                  const tag = r ? [r.implant ? 'I' : '', r.crown?.kind === 'cap' ? 'C' : r.crown ? 'F' : '', r.rootCanal ? 'R' : ''].join('') : ''
+                  return tag ? (
+                    <text
+                      x={labelX}
+                      y={labelY + (upper ? -fontSize * 1.05 : fontSize * 1.05)}
+                      textAnchor="middle"
+                      fontFamily="IBM Plex Mono, ui-monospace, monospace"
+                      fontSize={fontSize * 0.85}
+                      fontWeight={600}
+                      fill="#d9dfe7"
+                      className={`ann-label ${overlay.labels || isSel || isHover ? 'on' : ''}`}
+                    >
+                      {tag}
+                    </text>
+                  ) : null
+                })()}
               </g>
             )
           })}
+          {(result.implants ?? []).map((im, k) => (
+            <g key={`imp${k}`} className={`ann-label ${overlay.labels ? 'on' : ''}`} pointerEvents="none">
+              <rect
+                x={im.bbox[0] * W}
+                y={im.bbox[1] * H}
+                width={im.bbox[2] * W}
+                height={im.bbox[3] * H}
+                fill="none"
+                stroke="#d9dfe7"
+                strokeWidth={1}
+                strokeDasharray="3 3"
+                vectorEffect="non-scaling-stroke"
+              />
+              <text
+                x={(im.bbox[0] + im.bbox[2] / 2) * W}
+                y={(im.bbox[1] + im.bbox[3]) * H + fontSize * 1.1}
+                textAnchor="middle"
+                fontFamily="IBM Plex Mono, ui-monospace, monospace"
+                fontSize={fontSize * 0.85}
+                fontWeight={600}
+                fill="#d9dfe7"
+              >
+                {im.slot ? `I ${im.slot}` : 'I'}
+              </text>
+            </g>
+          ))}
         </svg>
         {scanning && (
           <div className="pointer-events-none absolute inset-0 overflow-hidden">
