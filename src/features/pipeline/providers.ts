@@ -140,7 +140,7 @@ export const modelProvider: InferenceProvider = {
       throw e
     }
     const found = detectionsFromSegmentation(seg, image.width / image.height / (seg.width / seg.height))
-    const { teeth, implants } = analyseRestorations(seg, found)
+    const { teeth, implants, pontics } = analyseRestorations(seg, found)
     if (teeth.length < 4) {
       throw new PipelineError(
         'no-teeth',
@@ -156,6 +156,7 @@ export const modelProvider: InferenceProvider = {
       occlusalCurve: occlusalCurveFrom(teeth) ?? estimateOcclusalPlane(preprocess(image)).curve,
       teeth,
       implants: seg.rest ? implants : undefined,
+      pontics: seg.rest ? pontics : undefined,
       stages: report(this.stages),
       segmentation: { width: seg.width, height: seg.height, labels: seg.labels, fg: seg.fg, rest: seg.rest },
     }

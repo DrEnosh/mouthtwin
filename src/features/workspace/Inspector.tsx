@@ -14,7 +14,7 @@ const SOURCE_TEXT: Record<InferenceSource, { title: string; body: string }> = {
   },
   model: {
     title: 'Tooth model · runs in your browser',
-    body: 'Outlines and FDI numbers are predicted by a U-Net trained on the public DENTEX dataset (Hamamci et al., MICCAI 2023, CC BY-NC-SA 4.0). The same model also flags crowns, fillings, root-canal fillings and implants (trained on the Cluj panoramic dataset, CC BY 4.0). Extra adult X-rays from STS-2D-Tooth and the AKU OPG set make it work on more scanners, which are drawn on the 3D teeth. The 3D teeth and jaws come from one expert-labelled ToothFairy2 CBCT (CC BY-SA 4.0), with teeth removed, lengthened or tilted to match this X-ray. Scores are the model’s own confidence, not clinical accuracy.',
+    body: 'Outlines and FDI numbers are predicted by a U-Net trained on the public DENTEX dataset (Hamamci et al., MICCAI 2023, CC BY-NC-SA 4.0). The same model also flags crowns, bridges, fillings, root-canal fillings and implants (trained on the Cluj panoramic dataset, CC BY 4.0), which are drawn on the 3D teeth. Extra adult X-rays from STS-2D-Tooth and the AKU OPG set help it work on more scanners. The 3D teeth and jaws come from one expert-labelled ToothFairy2 CBCT (CC BY-SA 4.0), with teeth removed, lengthened or tilted to match this X-ray. Scores are the model’s own confidence, not clinical accuracy.',
   },
 }
 
@@ -51,6 +51,7 @@ function Odontogram({ result }: { result: InferenceResult }) {
     if (m) marks.set(t.fdi, m)
   }
   for (const im of result.implants ?? []) if (im.slot !== null && !present.has(im.slot)) marks.set(im.slot, 'I')
+  for (const p of result.pontics ?? []) if (!present.has(p.slot) && !marks.has(p.slot)) marks.set(p.slot, 'P')
   const selected = useMouthTwin((s) => s.selectedFdi)
   const hovered = useMouthTwin((s) => s.hoveredFdi)
   const select = useMouthTwin((s) => s.select)
@@ -99,7 +100,7 @@ function Odontogram({ result }: { result: InferenceResult }) {
       </div>
       {row(OPG_ORDER_LOWER)}
       {marks.size > 0 && (
-        <p className="mt-1 font-mono text-[9.5px] leading-snug text-faint">C crown/cap · F filling · R root-canal filling · I implant</p>
+        <p className="mt-1 font-mono text-[9.5px] leading-snug text-faint">C crown/cap · F filling · R root-canal filling · I implant · P bridge pontic</p>
       )}
     </div>
   )
@@ -369,7 +370,9 @@ function tally(result: InferenceResult) {
     if (r.implant) implants++
     if (r.bridgeId) bridges.add(r.bridgeId)
   }
-  return { caps, fills, rct, implants, bridges: bridges.size }
+  for (const p of result.pontics ?? []) bridges.add(p.bridgeId)
+  const pontics = (result.pontics ?? []).filter((p) => !(result.implants ?? []).some((im) => im.slot === p.slot)).length
+  return { caps, fills, rct, implants, bridges: bridges.size, pontics }
 }
 
 function Findings({ result }: { result: InferenceResult }) {
@@ -381,6 +384,7 @@ function Findings({ result }: { result: InferenceResult }) {
     ['Root-canal fillings', t.rct],
     ['Implants', t.implants],
     ['Bridges (joined crowns)', t.bridges],
+    ['Bridge teeth with no root (pontics)', t.pontics],
   ]
   return (
     <section className="flex flex-col gap-2">

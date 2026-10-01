@@ -75,6 +75,14 @@ export interface ToothRestorations {
 }
 
 /** An implant fixture with no tooth outline of its own. `slot` is the FDI position it most likely replaces. */
+/** A bridge tooth with no root (pontic): a radiopaque crown block spanning the gap where a tooth is missing. */
+export interface PonticDetection {
+  /** FDI position of the missing tooth it replaces (estimated from the neighbouring teeth). */
+  slot: number
+  /** Same id as the abutment crowns it is joined to (ToothRestorations.bridgeId). */
+  bridgeId: number
+}
+
 export interface ImplantDetection {
   /** [x, y, width, height], normalised. */
   bbox: [number, number, number, number]
@@ -121,6 +129,8 @@ export interface InferenceResult {
   teeth: ToothDetection[]
   /** Implants the model sees where no tooth was outlined. */
   implants?: ImplantDetection[]
+  /** Bridge pontics (crowns spanning a gap, no root of their own). */
+  pontics?: PonticDetection[]
   stages: StageReport[]
   /** Per-pixel model output (runtime only, not part of the JSON contract). Labels are classes 0..32. */
   segmentation?: {
