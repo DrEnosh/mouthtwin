@@ -91,7 +91,13 @@ def main():
     sp = P3 / "stats3.json"
     stats = json.load(open(sp)) if sp.exists() else {}
 
-    todo = [m for m in meta if m["split"] == "train" and m["id"] not in stats]
+    # only the unlabelled STS OPGs that train3.py will use (same capped, seeded subset) - saves disk and time
+    import os, random
+    cap = int(os.environ.get("MT_STS_U", "1500"))
+    su = [m["id"] for m in meta if m["src"] == "sts_u"]
+    random.Random(3).shuffle(su)
+    skip = set(su[cap:])
+    todo = [m for m in meta if m["split"] == "train" and m["id"] not in stats and m["id"] not in skip]
     print("STS to label", len(todo), flush=True)
     for i in range(0, len(todo), 8):
         chunk = todo[i:i + 8]

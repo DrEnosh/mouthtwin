@@ -42,57 +42,94 @@ def rd(p):
 
 
 def build3():
-    D = T2.build()
-    # round-2 training images: tooth-vs-background is known wherever the tooth label is known
-    xs, ys, rs, tw, rw, sw = [], [], [], [], [], []
+    """Training rows are loaded lazily from disk (paths only); held-out sets are kept in memory."""
+    P1, P2 = T2.P1, T2.P2
+    rows = []  # (img, label, rest or None, fg or None, tw, rw, sw)
+    ex, ey, hx, hy, cx, cr = [], [], [], [], [], []
+    for m in json.load(open(P1 / "meta.json")):
+        img, msk = P1 / "img" / f"{m['stem']}.png", P1 / "mask" / f"{m['stem']}.png"
+        if m["val"]:
+            ex.append(rd(img)); ey.append(rd(msk))
+        else:
+            rows.append((img, msk, None, None, 1.0, 0.0, 3.0))
+    n_e = len(rows)
+    stats2 = json.load(open(P2 / "pseudo_stats.json"))
+    for m in json.load(open(P2 / "meta2.json")):
+        uid = m["id"]
+        if m["src"] == "cluj" and m["split"] == "eval":
+            cx.append(rd(P2 / "img" / f"{uid}.png")); cr.append(rd(P2 / "rest" / f"{uid}.png")); continue
+        st = stats2.get(uid)
+        if st is None or st["dup"] >= 0.97:
+            continue
+        if m["src"] == "dentex_dis" and m["split"] == "hold":
+            hx.append(rd(P2 / "img" / f"{uid}.png")); hy.append(rd(P2 / "mask" / f"{uid}.png")); continue
+        if not st["keep"]:
+            continue
+        img, lab = P2 / "img" / f"{uid}.png", P2 / "pseudo" / f"{uid}.png"
+        if m["src"] == "cluj":
+            rows.append((img, lab, P2 / "rest" / f"{uid}.png", None, 0.5, 1.0, 1.0))
+        elif m["src"] == "dentex_dis":
+            rows.append((img, lab, None, None, 1.0, 0.0, 1.5))
+        else:
+            rows.append((img, lab, None, None, 0.5, 0.0, 1.0))
+    n2 = len(rows)
     stats = json.load(open(P3 / "stats3.json"))
     meta = json.load(open(P3 / "meta3.json"))
     sx, sb = [], []
-    # cap the unlabelled STS share (RAM: every image is kept in memory)
     cap = int(os.environ.get("MT_STS_U", "1500"))
     su = [m["id"] for m in meta if m["src"] == "sts_u"]
     random.Random(3).shuffle(su)
     skip = set(su[cap:])
     for m in meta:
-        if m["id"] in skip:
-            continue
         uid = m["id"]
+        if uid in skip:
+            continue
         if m["split"] == "hold":
             sx.append(rd(P3 / "img" / f"{uid}.png")); sb.append(rd(P3 / "bin" / f"{uid}.png")); continue
         st = stats.get(uid)
         if not st or not st["keep"]:
             continue
-        y = rd(P3 / "pseudo" / f"{uid}.png"); fg = rd(P3 / "fg" / f"{uid}.png")
-        r = np.where(fg == 255, 0, FGK + FGV * (fg == 1)).astype(np.uint8)
-        xs.append(rd(P3 / "img" / f"{uid}.png")); ys.append(y); rs.append(r); rw.append(0.0)
-        if m["src"] == "sts_l":
-            tw.append(0.8); sw.append(1.2)
-        else:
-            tw.append(0.5); sw.append(0.8)
-    aku = json.load(open(P3 / "aku" / "meta.json"))
+        w = (0.8, 1.2) if m["src"] == "sts_l" else (0.5, 0.8)
+        rows.append((P3 / "img" / f"{uid}.png", P3 / "pseudo" / f"{uid}.png", None, P3 / "fg" / f"{uid}.png", w[0], 0.0, w[1]))
     ax, ai, at = [], [], []
-    for r in aku:
+    for r in json.load(open(P3 / "aku" / "meta.json")):
         uid = r["id"]
         if r["split"] == "hold":
             ax.append(rd(P3 / "aku" / "img" / f"{uid}.png")); ai.append(rd(P3 / "aku" / "inst" / f"{uid}.png")); at.append(r["types"]); continue
         st = stats.get(uid)
         if not st or not st["keep"]:
             continue
-        y = rd(P3 / "pseudo" / f"{uid}.png"); fg = rd(P3 / "fg" / f"{uid}.png")
-        rr = np.where(fg == 255, 0, FGK + FGV * (fg == 1)).astype(np.uint8)
-        xs.append(rd(P3 / "aku" / "img" / f"{uid}.png")); ys.append(y); rs.append(rr); rw.append(0.0); tw.append(1.0); sw.append(2.0)
-    print("round-3 extra train", len(xs), " STS-hold", len(sx), " AKU-hold", len(ax), flush=True)
-    if xs:
-        Tn = lambda a: torch.from_numpy(np.stack(a))
-        D["x"] = torch.cat([D["x"], Tn(xs)]); D["y"] = torch.cat([D["y"], Tn(ys)])
-        D["r"] = torch.cat([D["r"], Tn(rs)]); D["tw"] = torch.cat([D["tw"], torch.tensor(tw)])
-        D["rw"] = torch.cat([D["rw"], torch.tensor(rw)]); D["sw"] = torch.cat([D["sw"], torch.tensor(sw)])
-    D["sx"] = torch.from_numpy(np.stack(sx)) if sx else None
-    D["sb"] = torch.from_numpy(np.stack(sb)) if sb else None
-    D["ax"] = torch.from_numpy(np.stack(ax)) if ax else None
-    D["ai"] = torch.from_numpy(np.stack(ai)) if ai else None
-    D["at"] = at
-    return D
+        rows.append((P3 / "aku" / "img" / f"{uid}.png", P3 / "pseudo" / f"{uid}.png", None, P3 / "fg" / f"{uid}.png", 1.0, 0.0, 2.0))
+    print("train", len(rows), "(clinician-labelled", n_e, ", round-2 rows", n2, ", round-3 rows", len(rows) - n2, ")  E-val", len(ex),
+          " D-hold", len(hx), " Cluj-eval", len(cx), " STS-hold", len(sx), " AKU-hold", len(ax), flush=True)
+    S = lambda a: torch.from_numpy(np.stack(a)) if a else None
+    return {
+        "rows": rows, "tw": torch.tensor([r[4] for r in rows]), "rw": torch.tensor([r[5] for r in rows]), "sw": torch.tensor([r[6] for r in rows]),
+        "ex": S(ex), "ey": S(ey), "hx": S(hx), "hy": S(hy), "cx": S(cx), "cr": S(cr),
+        "sx": S(sx), "sb": S(sb), "ax": S(ax), "ai": S(ai), "at": at,
+    }
+
+
+_POOL = None
+
+
+def load_rows(rows, idx):
+    """Reads one batch from disk: image, tooth label, restoration bits (+ fg bits)."""
+    global _POOL
+    if _POOL is None:
+        from concurrent.futures import ThreadPoolExecutor
+        _POOL = ThreadPoolExecutor(4)
+
+    def one(i):
+        img, lab, rest, fg, *_ = rows[i]
+        r = rd(rest) if rest is not None else np.zeros((H, W), np.uint8)
+        if fg is not None:
+            f = rd(fg)
+            r = r | np.where(f == 255, 0, FGK + FGV * (f == 1)).astype(np.uint8)
+        return rd(img), rd(lab), r
+
+    out = list(_POOL.map(one, idx))
+    return tuple(torch.from_numpy(np.stack([o[k] for o in out])) for k in range(3))
 
 
 def fg_loss(lt, r):
@@ -182,14 +219,17 @@ def main():
 
     rec0 = {"epoch": 0}
     best = evaluate(rec0); rec0["score"] = best
+    if dev.type == "cuda":
+        torch.cuda.empty_cache()
     torch.save(model.state_dict(), OUT / "best.pt")
     hist.append(rec0); print(json.dumps(rec0), flush=True)
     for ep in range(EPOCHS):
         tot = 0.0
         for s in range(STEPS):
             idx = torch.multinomial(probs, BS, replacement=True)
-            x = D["x"][idx].to(dev).float()[:, None] / 255
-            y = D["y"][idx].to(dev).long(); r = D["r"][idx].to(dev).long()
+            bx, by, br = load_rows(D["rows"], idx.tolist())
+            x = bx.to(dev).float()[:, None] / 255
+            y = by.to(dev).long(); r = br.to(dev).long()
             tw = D["tw"][idx].to(dev); rw = D["rw"][idx].to(dev)
             x, y, r = augment(x, y, r)
             with torch.autocast("cuda", enabled=dev.type == "cuda"):
@@ -211,6 +251,8 @@ def main():
             if score > best:
                 best = score
                 torch.save(model.state_dict(), OUT / "best.pt")
+            if dev.type == "cuda":
+                torch.cuda.empty_cache()
         hist.append(rec)
         json.dump(hist, open(OUT / "history.json", "w"), indent=1)
         print(json.dumps(rec), flush=True)

@@ -11,12 +11,16 @@ if not exist dentex\proc3\aku\meta.json (
   %PY% -m zipfile -e aku_part2.zip . >> unzip3.log 2>&1
 )
 echo Downloading STS OPGs... > status3.txt
+if exist dentex\proc3\meta3.json goto prepdone
 %PY% -X faulthandler -u prepare3.py . > prep3.log 2>&1
 if errorlevel 1 goto fail
+:prepdone
 echo Teacher labelling... > status3.txt
 %PY% -X faulthandler -u pseudo3.py > pseudo3.log 2>&1
 if errorlevel 1 goto fail
 echo Training... > status3.txt
+set MT_BS=6
+set MT_STEPS=500
 %PY% -X faulthandler -u train3.py 30 > train3.log 2>&1
 if errorlevel 1 goto fail
 echo Exporting... > status3.txt
