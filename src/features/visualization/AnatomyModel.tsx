@@ -14,7 +14,7 @@ import type { InferenceResult } from '../../types/inference'
 import { OPG_ORDER_LOWER, OPG_ORDER_UPPER } from '../../data/fdi'
 import { reveal, toothAnchors } from './runtime'
 import {
-  CAP_COLOR, IMPLANT_COLOR, addRestorationAttributes, canalPaths, crownHeight, extractCrown, implantGeometry, makeRestoUniforms,
+  CAP_COLOR, IMPLANT_COLOR, addRestorationAttributes, canalPaths, crownHeight, crownInPlace, extractCrown, implantGeometry, makeRestoUniforms,
   patchToothMaterial, taperedTube, toothFrame, type RestoUniforms,
 } from './restorationGeometry'
 
@@ -337,12 +337,27 @@ export function AnatomyModel({ result }: { result: InferenceResult }) {
     for (const im of result.implants ?? []) if (im.slot !== null && !detections.has(im.slot)) placeImplant(im.slot, im.crowned)
     for (const d of result.teeth) if (d.restorations?.implant) placeImplant(d.fdi, false)
 
-    // bridges: bars joining neighbouring crowns that share one radiopaque block
+    // bridge pontics: a crown with no root at the missing tooth's position (implant slots already carry a crown)
+    const implantSlots = new Set((result.implants ?? []).map((im) => im.slot))
+    for (const pt of result.pontics ?? []) {
+      if (detections.has(pt.slot) || implantSlots.has(pt.slot)) continue
+      const g = refGeo.get(pt.slot)
+      if (!g) continue
+      const mat = capMat()
+      mat.side = THREE.DoubleSide
+      const mesh = new THREE.Mesh(crownInPlace(g, pt.slot), mat)
+      mesh.raycast = () => {}
+      mesh.name = `resto_pontic_${pt.slot}`
+      extras.push({ obj: mesh, mats: [mat], fdi: pt.slot, withTeeth: false })
+    }
+
+    // bridges: bars joining neighbouring crowns / pontics that share one radiopaque block
     const bridges = new Map<number, number[]>()
     for (const d of result.teeth) {
       const id = d.restorations?.bridgeId
       if (id) bridges.set(id, [...(bridges.get(id) ?? []), d.fdi])
     }
+    for (const pt of result.pontics ?? []) bridges.set(pt.bridgeId, [...(bridges.get(pt.bridgeId) ?? []), pt.slot])
     const crownCentre = (fdi: number) => {
       const g = refGeo.get(fdi)
       if (!g) return null

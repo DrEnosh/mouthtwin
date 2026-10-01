@@ -227,6 +227,27 @@ export function extractCrown(geo: THREE.BufferGeometry, fdi: number): THREE.Buff
   return out
 }
 
+/** The crown part of a tooth, kept where it is (for bridge pontics drawn at a missing tooth's position). */
+export function crownInPlace(geo: THREE.BufferGeometry, fdi: number): THREE.BufferGeometry {
+  const { sign, origin, crown } = toothFrame(geo, fdi)
+  const src = geo.index ? geo.toNonIndexed() : geo.clone()
+  const pos = src.attributes.position as THREE.BufferAttribute
+  const dep = (i: number) => (pos.getY(i) - origin) * sign
+  const keep: number[] = []
+  for (let f = 0; f < pos.count; f += 3) {
+    if (dep(f) < crown + 0.3 && dep(f + 1) < crown + 0.3 && dep(f + 2) < crown + 0.3) keep.push(f, f + 1, f + 2)
+  }
+  const out = new THREE.BufferGeometry()
+  const arr = new Float32Array(keep.length * 3)
+  keep.forEach((vi, k) => {
+    arr[k * 3] = pos.getX(vi); arr[k * 3 + 1] = pos.getY(vi); arr[k * 3 + 2] = pos.getZ(vi)
+  })
+  out.setAttribute('position', new THREE.BufferAttribute(arr, 3))
+  out.computeVertexNormals()
+  if (src !== geo) src.dispose()
+  return out
+}
+
 /** Generic threaded implant: fixture (in the bone) + abutment. Local axis = +y, crestal end at y = 0, fixture below. */
 export function implantGeometry(radius: number, length = 10.5): { fixture: THREE.BufferGeometry; abutment: THREE.BufferGeometry } {
   const pts: THREE.Vector2[] = []

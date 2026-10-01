@@ -7,7 +7,7 @@
  * radiopaque. Nothing here knows the material or the quality of the work.
  */
 import { OPG_ORDER_LOWER, OPG_ORDER_UPPER } from '../../../data/fdi'
-import type { ImplantDetection, ToothDetection, ToothRestorations } from '../../../types/inference'
+import type { ImplantDetection, PonticDetection, ToothDetection, ToothRestorations } from '../../../types/inference'
 import type { SegOutput } from './segModel'
 import { occlusalCurveFrom } from './postprocess'
 
@@ -24,6 +24,7 @@ export const fdiToClass = (fdi: number) => (Math.floor(fdi / 10) - 1) * 8 + (fdi
 export interface RestorationAnalysis {
   teeth: ToothDetection[]
   implants: ImplantDetection[]
+  pontics: PonticDetection[]
 }
 
 interface Comp {
@@ -81,7 +82,7 @@ const quantile = (sorted: number[], q: number) => sorted[Math.min(sorted.length 
 
 export function analyseRestorations(seg: SegOutput, teeth: ToothDetection[]): RestorationAnalysis {
   const { width: w, height: h, labels, rest, input } = seg
-  if (!rest || !input) return { teeth, implants: [] }
+  if (!rest || !input) return { teeth, implants: [], pontics: [] }
   const plane = (k: number) => rest.subarray(k * w * h, (k + 1) * w * h)
   const imp = plane(0)
   const prr = plane(1)
@@ -108,7 +109,7 @@ export function analyseRestorations(seg: SegOutput, teeth: ToothDetection[]): Re
     }
     pix.set(d.fdi, list)
   }
-  if (lum.length < 200) return { teeth, implants: [] }
+  if (lum.length < 200) return { teeth, implants: [], pontics: [] }
   lum.sort((a, b) => a - b)
   const med = quantile(lum, 0.5)
   const hi = quantile(lum, 0.995)
@@ -118,7 +119,7 @@ export function analyseRestorations(seg: SegOutput, teeth: ToothDetection[]): Re
   // bright restoration mask (for bridge detection and the radiopacity check)
   const brightRest = new Uint8Array(w * h)
   for (let i = 0; i < brightRest.length; i++) if ((prr[i] > P_PRR || fil[i] > P_FIL) && input[i] >= bright) brightRest[i] = 1
-  const { lab: bl } = components(brightRest, w, h)
+  const { lab: bl, comps: bc } = components(brightRest, w, h)
 
   const perTooth = new Map<number, ToothRestorations>()
   const capComp = new Map<number, number>()
@@ -169,19 +170,6 @@ export function analyseRestorations(seg: SegOutput, teeth: ToothDetection[]): Re
       if (best && bestN / crown >= 0.4) capComp.set(d.fdi, best)
     }
     if (Object.keys(r).length) perTooth.set(d.fdi, r)
-  }
-
-  // bridge: crowns of the same jaw that share one connected radiopaque block
-  const groups = new Map<string, number[]>()
-  for (const [fdi, comp] of capComp) {
-    const key = `${comp}:${fdi < 30 ? 'u' : 'l'}`
-    groups.set(key, [...(groups.get(key) ?? []), fdi])
-  }
-  let bridgeId = 0
-  for (const members of groups.values()) {
-    if (members.length < 2) continue
-    bridgeId++
-    for (const fdi of members) (perTooth.get(fdi) as ToothRestorations).bridgeId = bridgeId
   }
 
   const outTeeth = teeth.map((d) => (perTooth.has(d.fdi) ? { ...d, restorations: perTooth.get(d.fdi) } : { ...d, restorations: {} }))
@@ -248,7 +236,61 @@ export function analyseRestorations(seg: SegOutput, teeth: ToothDetection[]): Re
       crowned: n > 0 && hit / n >= 0.3,
     })
   }
-  return { teeth: outTeeth, implants }
+  // bridges: crowns of the same jaw that share one connected radiopaque block. Missing-tooth positions lying under
+  // that block between / beside its crowns are pontics (crowns with no root); implants under it are abutments too.
+  const toothW = (() => {
+    const ws = teeth.map((d) => d.bbox[2] * w).sort((p, q) => p - q)
+    return ws.length ? ws[ws.length >> 1] : 30
+  })()
+  const groups = new Map<string, number[]>()
+  for (const [fdi, comp] of capComp) {
+    const key = `${comp}:${fdi < 30 ? 'u' : 'l'}`
+    groups.set(key, [...(groups.get(key) ?? []), fdi])
+  }
+  const pontics: PonticDetection[] = []
+  let bridgeId = 0
+  for (const [key, members] of groups) {
+    const comp = bc[Number(key.split(':')[0])]
+    const upper = key.endsWith('u')
+    const order = upper ? OPG_ORDER_UPPER : OPG_ORDER_LOWER
+    const slots: number[] = []
+    order.forEach((f, idx) => {
+      if (teeth.some((t) => t.fdi === f)) return
+      const ex = estimateX(teeth, order, idx)
+      if (ex === null) return
+      const px = ex * w
+      if (px > comp.minX + 0.35 * toothW && px < comp.maxX - 0.35 * toothW) slots.push(f)
+    })
+    // block must really span the gap: at least ~1.6 tooth widths wide when it carries a pontic
+    const span = comp.maxX - comp.minX + 1
+    const pon = slots.filter((f) => !implants.some((im) => im.slot === f))
+    const viaImplant = slots.filter((f) => implants.some((im) => im.slot === f))
+    if (members.length + slots.length < 2 || (pon.length && span < 1.6 * toothW)) continue
+    bridgeId++
+    for (const fdi of members) (perTooth.get(fdi) as ToothRestorations).bridgeId = bridgeId
+    for (const f of pon) pontics.push({ slot: f, bridgeId })
+    for (const f of viaImplant) pontics.push({ slot: f, bridgeId }) // drawn as the implant's crown, joined by the bar
+  }
+  const finalTeeth = outTeeth.map((d) => (perTooth.get(d.fdi)?.bridgeId ? { ...d, restorations: perTooth.get(d.fdi) } : d))
+  return { teeth: finalTeeth, implants, pontics }
+}
+
+/** Expected x (normalised) of the tooth at position idx of an OPG-ordered list, from the outlined neighbours. */
+function estimateX(teeth: ToothDetection[], order: number[], idx: number): number | null {
+  const xs = order.map((f) => {
+    const d = teeth.find((t) => t.fdi === f)
+    return d ? d.bbox[0] + d.bbox[2] / 2 : null
+  })
+  let l = idx - 1
+  while (l >= 0 && xs[l] === null) l--
+  let r = idx + 1
+  while (r < xs.length && xs[r] === null) r++
+  const lx = l >= 0 ? (xs[l] as number) : null
+  const rx = r < xs.length ? (xs[r] as number) : null
+  if (lx !== null && rx !== null) return lx + ((rx - lx) * (idx - l)) / (r - l)
+  if (lx !== null) return lx + 0.028 * (idx - l)
+  if (rx !== null) return rx - 0.028 * (r - idx)
+  return null
 }
 
 const round = (x: number) => Math.round(x * 100) / 100
