@@ -8,7 +8,7 @@ import { toPipelineError } from '../pipeline/errors'
 import { DEMO_IMAGE_URL, IMAGES_LEAVE_BROWSER, modelProvider, uploadProvider } from '../pipeline/providers'
 import { preloadModel } from '../pipeline/model/segModel'
 
-const HeroAnatomy = lazy(() => import('../visualization/HeroAnatomy').then((m) => ({ default: m.HeroAnatomy })))
+const ArchPreview = lazy(() => import('../visualization/ArchPreview').then((m) => ({ default: m.ArchPreview })))
 const BASE = import.meta.env.BASE_URL
 
 const STEPS = [
@@ -51,7 +51,6 @@ export function Landing() {
   const [consent, setConsent] = useState<Pending | null>(null)
   const [hovered, setHovered] = useState<{ fdi: number; x: number; y: number } | null>(null)
   const [selected, setSelected] = useState<number | null>(null)
-  const [showBone, setShowBone] = useState(true)
   const [touched, setTouched] = useState(false)
   const hero = useRef<HTMLDivElement>(null)
 
@@ -110,7 +109,7 @@ export function Landing() {
       </header>
 
       {/* hero */}
-      <section className="relative grid min-h-[calc(100svh-64px)] grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <section className="relative grid min-h-[calc(100svh-64px)] grid-cols-1 overflow-hidden lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
         <div className="relative z-10 flex flex-col justify-center px-5 pb-6 pt-8 sm:px-10 lg:py-16">
           <h1 className="max-w-[13ch] text-[42px] font-light leading-[1.04] tracking-[-0.03em] text-ink sm:text-[60px]" style={{ textWrap: 'balance' }}>
             See a panoramic X-ray as a 3D mouth.
@@ -178,16 +177,19 @@ export function Landing() {
           )}
         </div>
 
-        <div ref={hero} className="relative h-[56svh] min-h-[360px] lg:h-auto" aria-label="Interactive 3D reference dentition">
+        <div
+          ref={hero}
+          className="relative h-[52svh] min-h-[340px] lg:absolute lg:inset-y-0 lg:right-[-6%] lg:h-auto lg:w-[70%]"
+          aria-label="Interactive tooth arch"
+        >
           <div
             className="pointer-events-none absolute inset-0"
-            style={{ background: 'radial-gradient(55% 50% at 50% 50%, rgb(239 231 216 / 0.07), transparent 72%)' }}
+            style={{ background: 'radial-gradient(55% 55% at 55% 48%, rgb(134 197 216 / 0.08), transparent 70%)' }}
           />
-          <Suspense fallback={<div className="grid h-full place-items-center text-[12.5px] text-faint">Loading 3D jaw…</div>}>
-            <HeroAnatomy
+          <Suspense fallback={null}>
+            <ArchPreview
               hovered={hovered?.fdi ?? null}
               selected={selected}
-              showBone={showBone}
               onHover={(fdi, x, y) => setHovered(fdi === null ? null : { fdi, x: x ?? 0, y: y ?? 0 })}
               onSelect={(f) => {
                 setSelected(f)
@@ -208,7 +210,7 @@ export function Landing() {
           )}
 
           {sel ? (
-            <div className="absolute bottom-5 left-5 right-5 z-10 max-w-[340px] rounded-xl border border-line-strong bg-panel/90 p-4 backdrop-blur sm:left-auto">
+            <div className="absolute bottom-6 left-5 right-5 z-10 max-w-[340px] rounded-xl border border-line-strong bg-panel/90 p-4 backdrop-blur sm:left-auto lg:right-[12%]">
               <div className="flex items-baseline justify-between gap-3">
                 <p className="text-[15px] font-medium text-ink">{sel.name}</p>
                 <button onClick={() => setSelected(null)} className="text-[12px] text-faint hover:text-ink" aria-label="Close tooth details">
@@ -231,17 +233,13 @@ export function Landing() {
             </div>
           ) : (
             <p
-              className={`pointer-events-none absolute bottom-5 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-panel/70 px-3 py-1.5 text-[12px] text-muted backdrop-blur transition-opacity duration-700 ${
+              className={`pointer-events-none absolute bottom-6 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full border border-line bg-panel/70 px-3 py-1.5 text-[12px] text-muted backdrop-blur transition-opacity duration-700 ${
                 touched ? 'opacity-0' : 'opacity-100'
               }`}
             >
               Drag to turn · click a tooth
             </p>
           )}
-          <label className="absolute right-5 top-4 z-10 flex cursor-pointer items-center gap-2 text-[12px] text-muted">
-            <input type="checkbox" checked={showBone} onChange={(e) => setShowBone(e.target.checked)} className="accent-[#86c5d8]" />
-            Jaw bone and nerve
-          </label>
         </div>
       </section>
 
