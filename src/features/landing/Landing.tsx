@@ -1,7 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import { Wordmark } from '../../components/Wordmark'
 import { ConsentDialog, DISCLAIMER, hasAcknowledged } from '../../components/Disclaimer'
-import { toothRef } from '../../data/fdi'
+import { TEETH, toothRef, type ToothKind } from '../../data/fdi'
+import { CompareSlider } from './CompareSlider'
 import { useMouthTwin } from '../../store/useMouthTwin'
 import { loadImageFromFile, loadImageFromUrl } from '../pipeline/loadImage'
 import { toPipelineError } from '../pipeline/errors'
@@ -37,6 +38,18 @@ const RESULTS: [string, string, string][] = [
   ['Implants found', '92%', '220 Cluj X-rays'],
 ]
 
+const KINDS: { id: ToothKind; label: string }[] = [
+  { id: 'incisor', label: 'Incisors' },
+  { id: 'canine', label: 'Canines' },
+  { id: 'premolar', label: 'Premolars' },
+  { id: 'molar', label: 'Molars' },
+]
+const randomFdi = (not?: number) => {
+  let f = not ?? 0
+  while (f === (not ?? 0)) f = TEETH[Math.floor(Math.random() * TEETH.length)].fdi
+  return f
+}
+
 type Pending = { kind: 'demo' } | { kind: 'file'; file: File; force: boolean }
 
 export function Landing() {
@@ -52,7 +65,24 @@ export function Landing() {
   const [hovered, setHovered] = useState<{ fdi: number; x: number; y: number } | null>(null)
   const [selected, setSelected] = useState<number | null>(null)
   const [touched, setTouched] = useState(false)
+  const [mode, setMode] = useState<'explore' | 'quiz'>('explore')
+  const [kind, setKind] = useState<ToothKind | null>(null)
+  const [quiz, setQuiz] = useState({ target: 36, streak: 0, best: 0, last: null as null | { fdi: number; ok: boolean; answer: number; key: number } })
   const hero = useRef<HTMLDivElement>(null)
+  const highlight = kind ? new Set(TEETH.filter((t) => t.kind === kind).map((t) => t.fdi)) : null
+  const pickTooth = (f: number | null) => {
+    setTouched(true)
+    if (mode === 'quiz') {
+      if (f === null) return
+      setQuiz((q) => {
+        const ok = f === q.target
+        const streak = ok ? q.streak + 1 : 0
+        return { target: ok ? randomFdi(q.target) : q.target, streak, best: Math.max(q.best, streak), last: { fdi: f, ok, answer: q.target, key: Date.now() } }
+      })
+      return
+    }
+    setSelected(f === selected ? null : f)
+  }
 
   useEffect(() => preloadModel(), [])
 
@@ -189,17 +219,16 @@ export function Landing() {
           <Suspense fallback={null}>
             <ArchPreview
               hovered={hovered?.fdi ?? null}
-              selected={selected}
+              selected={mode === 'explore' ? selected : null}
+              highlight={mode === 'explore' ? highlight : null}
+              flash={mode === 'quiz' ? quiz.last : null}
               onHover={(fdi, x, y) => setHovered(fdi === null ? null : { fdi, x: x ?? 0, y: y ?? 0 })}
-              onSelect={(f) => {
-                setSelected(f)
-                setTouched(true)
-              }}
+              onSelect={pickTooth}
               interacting={(on) => on && setTouched(true)}
             />
           </Suspense>
 
-          {hov && hovered && heroRect && hovered.fdi !== selected && (
+          {mode === 'explore' && hov && hovered && heroRect && hovered.fdi !== selected && (
             <div
               className="pointer-events-none absolute z-10 whitespace-nowrap rounded-md border border-line-strong bg-panel/90 px-2.5 py-1.5 text-[12px] text-ink backdrop-blur"
               style={{ left: hovered.x - heroRect.left + 14, top: hovered.y - heroRect.top + 14 }}
@@ -209,7 +238,7 @@ export function Landing() {
             </div>
           )}
 
-          {sel ? (
+          {mode === 'explore' && sel ? (
             <div className="absolute bottom-6 left-5 right-5 z-10 max-w-[340px] rounded-xl border border-line-strong bg-panel/90 p-4 backdrop-blur sm:left-auto lg:right-[12%]">
               <div className="flex items-baseline justify-between gap-3">
                 <p className="text-[15px] font-medium text-ink">{sel.name}</p>
@@ -237,9 +266,76 @@ export function Landing() {
                 touched ? 'opacity-0' : 'opacity-100'
               }`}
             >
-              Drag to turn · click a tooth
+              {mode === 'quiz' ? 'Find the tooth by its FDI number' : 'Drag to turn · click a tooth'}
             </p>
           )}
+
+          <div className="absolute left-4 top-4 z-10 flex max-w-[calc(100%-32px)] flex-col gap-2 lg:left-[12%] lg:top-8">
+            <div className="inline-flex w-fit rounded-lg border border-line bg-panel/80 p-0.5 text-[12.5px] backdrop-blur" role="tablist" aria-label="Arch mode">
+              {(['explore', 'quiz'] as const).map((m) => (
+                <button
+                  key={m}
+                  role="tab"
+                  aria-selected={mode === m}
+                  onClick={() => {
+                    setMode(m)
+                    setSelected(null)
+                    setTouched(true)
+                    if (m === 'quiz') setQuiz((q) => ({ ...q, target: randomFdi(), last: null }))
+                  }}
+                  className={`rounded-md px-3 py-1.5 transition ${mode === m ? 'bg-raised text-ink' : 'text-muted hover:text-ink'}`}
+                >
+                  {m === 'explore' ? 'Explore' : 'Find the tooth'}
+                </button>
+              ))}
+            </div>
+            {mode === 'explore' ? (
+              <div className="flex flex-wrap gap-1.5">
+                {KINDS.map((k) => (
+                  <button
+                    key={k.id}
+                    onClick={() => {
+                      setKind(kind === k.id ? null : k.id)
+                      setTouched(true)
+                    }}
+                    aria-pressed={kind === k.id}
+                    className={`rounded-full border px-2.5 py-1 text-[12px] backdrop-blur transition ${
+                      kind === k.id ? 'border-accent/70 bg-accent/15 text-ink' : 'border-line bg-panel/60 text-muted hover:text-ink'
+                    }`}
+                  >
+                    {k.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="w-fit rounded-xl border border-line bg-panel/85 px-4 py-3 backdrop-blur" aria-live="polite">
+                <p className="text-[13px] text-muted">Click tooth</p>
+                <p className="font-mono text-[34px] leading-none text-ink">{quiz.target}</p>
+                <p className="mt-2 text-[12.5px] text-muted">
+                  {quiz.last
+                    ? quiz.last.ok
+                      ? `Correct, that’s the ${toothRef(quiz.last.answer).name.toLowerCase()}.`
+                      : `That was ${quiz.last.fdi}. ${quiz.last.answer} is shown in green.`
+                    : 'FDI numbering: quadrant, then position from the midline.'}
+                </p>
+                <p className="mt-1 text-[12px] text-faint">
+                  Streak {quiz.streak} · best {quiz.best}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-line px-5 py-16 sm:px-10 sm:py-20">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <h2 className="max-w-[22ch] text-[28px] font-light tracking-[-0.02em] text-ink sm:text-[34px]">Drag across the X-ray to see what the model reads</h2>
+          <p className="max-w-[44ch] text-[14px] leading-relaxed text-muted">
+            A real result on a public DENTEX X-ray the model never trained on: every tooth outlined and given its FDI number.
+          </p>
+        </div>
+        <div className="mt-8">
+          <CompareSlider before={`${BASE}landing/compare-raw.webp`} after={`${BASE}landing/compare-ai.webp`} />
         </div>
       </section>
 
