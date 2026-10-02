@@ -31,7 +31,7 @@ export function BottomBar() {
           </button>
         ))}
       </nav>
-      <div className="ml-auto shrink-0">
+      <div className="ml-auto shrink-0 lg:hidden">
         <DisclaimerNote />
       </div>
     </footer>

@@ -1,3 +1,4 @@
+import { DisclaimerNote } from '../../components/Disclaimer'
 import { Wordmark } from '../../components/Wordmark'
 import { useMouthTwin, type ViewMode } from '../../store/useMouthTwin'
 
@@ -32,9 +33,9 @@ export function TopBar() {
         <Meta label="Case" value={caseName} />
         <Meta label="Imaging" value={`OPG · ${result.image.width}×${result.image.height}`} />
       </dl>
-      <span className="hidden rounded-full border border-caution/40 px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-caution lg:inline">
-        Experimental
-      </span>
+      <div className="hidden lg:block">
+        <DisclaimerNote placement="down" />
+      </div>
 
       <div className="ml-auto flex items-center gap-1 rounded-md border border-line bg-ground p-0.5" role="tablist" aria-label="View">
         {VIEWS.map((v) => (

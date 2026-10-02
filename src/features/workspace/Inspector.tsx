@@ -273,7 +273,7 @@ function ToothDetail({ tooth, det, result }: { tooth: ToothRef; det: ToothDetect
       <section className="flex items-center justify-between rounded-md border border-line bg-panel-2 px-3 py-2.5">
         <span className="text-[12.5px] text-muted">Confidence</span>
         <span className="font-mono text-[12px] text-ink">
-          {typeof det.score === 'number' ? det.score.toFixed(2) : 'Experimental · no model score'}
+          {typeof det.score === 'number' ? det.score.toFixed(2) : 'No model score'}
         </span>
       </section>
     </>

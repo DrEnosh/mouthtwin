@@ -101,6 +101,25 @@ function meshTheta(geo: THREE.BufferGeometry, tangent: THREE.Vector3, upper: boo
   return upper ? Math.atan2(-ux, uy) : Math.atan2(ux, uy)
 }
 
+/** Compress the root part of a reference tooth along its axis so the whole tooth is `target` mm long. */
+function shortenRoot(geo: THREE.BufferGeometry, fdi: number, target: number) {
+  const { sign, origin, crown } = toothFrame(geo, fdi)
+  const pos = geo.attributes.position as THREE.BufferAttribute
+  let maxD = 0
+  for (let i = 0; i < pos.count; i++) maxD = Math.max(maxD, (pos.getY(i) - origin) * sign)
+  if (maxD <= target) return
+  const k = THREE.MathUtils.clamp((target - crown) / Math.max(1e-3, maxD - crown), 0.06, 1)
+  const start = crown - 1 // blend in just above the crown margin so the neck stays smooth
+  for (let i = 0; i < pos.count; i++) {
+    const d = (pos.getY(i) - origin) * sign
+    if (d <= start) continue
+    pos.setY(i, origin + sign * (start + (d - start) * k))
+  }
+  pos.needsUpdate = true
+  geo.computeVertexNormals()
+  geo.computeBoundingBox()
+}
+
 export function AnatomyModel({ result }: { result: InferenceResult }) {
   const gltf = useGLTF(ANATOMY_URL)
   const layers = useMouthTwin((s) => s.layers)
@@ -235,9 +254,11 @@ export function AnatomyModel({ result }: { result: InferenceResult }) {
             // draw only the visible length
             const partial = !crownOnly && !treated && ((p.depth > 0.25 && p.length < 0.92) || Boolean(p.partialRoot))
             const s = crownOnly || partial ? 1 : THREE.MathUtils.clamp(p.length, 0.72, 1.35)
-            if (crownOnly) resto.uCut.value = THREE.MathUtils.clamp(p.length * len, crownH * 0.8, crownH * 1.4)
-            if (partial) resto.uCut.value = Math.max(crownH * 0.8, p.length * len)
-            if (crownOnly || partial) material.side = THREE.DoubleSide
+            if (crownOnly || partial) {
+              // shorten only the root, keeping a closed, rounded tooth (a developing tooth has a short root, not a cut one)
+              const target = crownOnly ? crownH * 1.15 : Math.max(crownH * 1.2, p.length * len)
+              shortenRoot(geo, fdi, target)
+            }
             const tilt = THREE.MathUtils.clamp(p.tilt, -1.6, 1.6)
             const drop = THREE.MathUtils.clamp(p.depth * len, -6, 18) // mm toward the apex (impacted / unerupted)
             // which rotation direction increases the projected angle for this tooth
