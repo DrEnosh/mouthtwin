@@ -6,6 +6,9 @@ Trains a 37-output segmentation model on panoramic X-rays: 33-class tooth softma
 Data and licences:
 - DENTEX (Hamamci et al., MICCAI 2023, https://huggingface.co/datasets/ibrahimhamamci/DENTEX), CC BY-NC-SA 4.0 - weights derived from it stay non-commercial/share-alike.
 - Cluj OPG dental-condition dataset (Mureșanu, Hedeșiu, Iacob et al., Diagnostics 2024, Zenodo 10.5281/zenodo.15487430), CC BY 4.0.
+- STS-2D-Tooth (Wang et al., Scientific Data 2025, Zenodo 10.5281/zenodo.10597292), CC BY 4.0 on Zenodo.
+- AKU OPG dataset (Data in Brief 2024, Zenodo 10.5281/zenodo.10538750), CC BY 4.0 on Zenodo.
+- UFBA-425 (https://figshare.com/articles/dataset/UFBA-425/29827475; Instance_seg_teeth / OralBBNet authors), CC BY 4.0: 425 OPGs with a human mask per FDI-numbered tooth.
 - AU-OPG is deliberately not used (no licence).
 
 Round 1 (tooth numbering only, 574 labelled OPGs):
@@ -23,4 +26,22 @@ python pseudo_label.py     # round-1 teacher fills tooth labels on the extra OPG
 python train2.py 40        # multi-task student, masked losses, flip/affine/photometric augmentation
 python export2.py          # ONNX with a `rest` output, metrics.json, training_curves.png, val_overlays.png
 ```
-Results (held-out OPGs) are in `results/`.
+Round 3 (STS-2D-Tooth + AKU; `run_v3.bat`):
+```bash
+python prepare_aku.py && python prepare3.py .
+python pseudo3.py          # round-2 teacher numbers teeth inside the human masks / tooth-type polygons
+python train3.py 30        # lazy loading, extra tooth-vs-background loss on human masks
+python export3.py
+```
+
+Round 4 (UFBA-425 + all 2,650 unlabelled STS OPGs; `get_ufba.bat`, then `run_v4b.bat`):
+```bash
+python prepare_ufba.py     # 512x512 squeezed OPGs stretched back to 768x384; 40 held out (UFBA-hold, full FDI)
+python train4b.py 18       # from round 3; half LR; Cluj restoration OPGs sampled 1.5x;
+                           # checkpoint chosen on 0.75 x teeth score + 0.25 x mean restoration IoU
+python export4b.py
+```
+`train4.py` (round 4a) chose its checkpoint on teeth only and lost fillings/root canals (filling IoU 0.46 -> 0.40); it was
+not shipped. Its numbers are in `results/round4/metrics_round4a_rejected.json`.
+
+Results (held-out OPGs) are in `results/` (`results/round3/`, `results/round4/`).

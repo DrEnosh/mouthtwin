@@ -11,10 +11,10 @@ import type { ImplantDetection, PonticDetection, ToothDetection, ToothRestoratio
 import type { SegOutput } from './segModel'
 import { occlusalCurveFrom } from './postprocess'
 
-// per-plane thresholds on the 0..255 planes, tuned on 220 held-out Cluj OPGs for the round-3 model
-// (crown/cap 0.8 and filling 0.7 cut over-calling; implant and root canal stay at 0.5)
+// per-plane thresholds on the 0..255 planes, tuned on 220 held-out Cluj OPGs (round 3, re-checked for round 4)
+// (crown/cap 0.9 and filling 0.7 cut over-calling; implant and root canal stay at 0.5)
 const P_IMP = 127
-const P_PRR = 204
+const P_PRR = 230
 const P_FIL = 178
 const P_RCT = 127
 const CROWN_FRACTION = 0.46 // share of the tooth height, from the occlusal edge, counted as crown
