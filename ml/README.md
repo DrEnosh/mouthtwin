@@ -44,4 +44,20 @@ python export4b.py
 `train4.py` (round 4a) chose its checkpoint on teeth only and lost fillings/root canals (filling IoU 0.46 -> 0.40); it was
 not shipped. Its numbers are in `results/round4/metrics_round4a_rejected.json`.
 
-Results (held-out OPGs) are in `results/` (`results/round3/`, `results/round4/`).
+Round 5 (experiment, NOT shipped; `get5.bat`, `get5b.bat`, then `run_v5.bat`):
+```bash
+python get5.py && python get5b.py   # Humans-in-the-Loop (Kaggle CC0 / Zenodo 4457648 CC BY 4.0), DentalOPG-1550 and
+                                    # Kairouan (Mendeley, CC BY 4.0)
+python prepare5.py                  # HITL Universal 1-32 -> FDI polygons (55 held out); DentalOPG images only (box labels
+                                    # are partial; patients under 16 skipped; file names contain patient names -> hashed ids);
+                                    # Kairouan human tooth outlines + teacher numbers
+python train5.py 24 && python export5.py
+```
+Result (`results/round5/`): tooth outlines on the new HITL test went from Dice 0.738 to 0.806 and hard DENTEX numbering
+from 93.3% to 94.5%, but HITL numbering stayed at 91.5%, STS/UFBA/DENTEX outlines dropped slightly and implant precision
+(app thresholds) fell from 0.85 to 0.79. Much of the HITL gain looks like learning that set's outline style (tooth
+recall fell). Round 4 stays live. The Khurshid/Trachoo restoration set (Mendeley mdvs6mjgf2) was downloaded but not used:
+its Roboflow export is mostly zoomed crops and 90-degree turns, and about 300 images look like Tufts Dental Database
+images, which have their own terms.
+
+Results (held-out OPGs) are in `results/` (`results/round3/`, `results/round4/`, `results/round5/`).

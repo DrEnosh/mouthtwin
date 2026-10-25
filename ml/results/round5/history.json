@@ -1,0 +1,800 @@
+[
+ {
+  "epoch": 0,
+  "E_val": {
+   "fdi_mean_dice": 0.8346839435396216,
+   "fdi_mean_iou": 0.7352597333240978,
+   "tooth_recall": 0.8671261994762725,
+   "fdi_numbering_acc": 0.9692753623188406,
+   "n_teeth": 1725,
+   "worst_quartile_dice": 0.7335611454091886,
+   "tooth_dice": 0.9095802553971254
+  },
+  "D_hold": {
+   "fdi_mean_dice": 0.8088798207964527,
+   "fdi_mean_iou": 0.7096065447988954,
+   "tooth_recall": 0.8016707023835419,
+   "fdi_numbering_acc": 0.9330783938814532,
+   "n_teeth": 523,
+   "worst_quartile_dice": 0.628486048118808
+  },
+  "UFBA_hold": {
+   "fdi_mean_dice": 0.8515991064319555,
+   "fdi_mean_iou": 0.7643297084694866,
+   "tooth_recall": 0.888204932400426,
+   "fdi_numbering_acc": 0.9627118644067797,
+   "n_teeth": 1180,
+   "worst_quartile_dice": 0.7020096515597597,
+   "tooth_dice": 0.900964268449221
+  },
+  "STS_hold": {
+   "tooth_dice": 0.9079690867505216,
+   "worst_quartile_dice": 0.8745785036095706,
+   "n_images": 100
+  },
+  "AKU_hold": {
+   "tooth_dice": 0.8803383460101303,
+   "tooth_found": 0.9853395061728395,
+   "type_acc": 0.9745370370370371,
+   "n_teeth": 1296
+  },
+  "HITL_hold": {
+   "fdi_mean_dice": 0.7375778023158367,
+   "fdi_mean_iou": 0.616788792315623,
+   "tooth_recall": 0.8847979975575624,
+   "fdi_numbering_acc": 0.9164325842696629,
+   "n_teeth": 1424,
+   "worst_quartile_dice": 0.524140219869034,
+   "tooth_dice": 0.8211449031955317
+  },
+  "Cluj_eval": {
+   "implant": {
+    "iou": 0.5926041459887134,
+    "recall": 0.8333333333333334,
+    "precision": 0.7796610169491526,
+    "n_gt": 60
+   },
+   "prosthetic_restoration": {
+    "iou": 0.5647555306003156,
+    "recall": 0.8856088560885609,
+    "precision": 0.43021032504780116,
+    "n_gt": 271
+   },
+   "filling": {
+    "iou": 0.4648312741030116,
+    "recall": 0.8484065460809647,
+    "precision": 0.6390284757118928,
+    "n_gt": 1161
+   },
+   "root_canal_treatment": {
+    "iou": 0.597166556182097,
+    "recall": 0.9311827956989247,
+    "precision": 0.8281990521327014,
+    "n_gt": 930
+   }
+  },
+  "teeth_score": 0.8446912418929954,
+  "rest_score": 0.5548393767185343,
+  "score": 0.7722282755993801
+ },
+ {
+  "epoch": 1,
+  "train_loss": 0.6066530810892582,
+  "time_min": 2.5964195013046263
+ },
+ {
+  "epoch": 2,
+  "train_loss": 0.6169068094193936,
+  "time_min": 4.839472397168477
+ },
+ {
+  "epoch": 3,
+  "train_loss": 0.623769256234169,
+  "time_min": 7.12863723039627,
+  "E_val": {
+   "fdi_mean_dice": 0.8311987650341125,
+   "fdi_mean_iou": 0.7301976718377335,
+   "tooth_recall": 0.8695185483878046,
+   "fdi_numbering_acc": 0.9698550724637681,
+   "n_teeth": 1725,
+   "worst_quartile_dice": 0.7286396320564268,
+   "tooth_dice": 0.9072983106170879
+  },
+  "D_hold": {
+   "fdi_mean_dice": 0.8062062512639817,
+   "fdi_mean_iou": 0.7053428392133446,
+   "tooth_recall": 0.8028941064428389,
+   "fdi_numbering_acc": 0.9426386233269598,
+   "n_teeth": 523,
+   "worst_quartile_dice": 0.6226163743179787
+  },
+  "UFBA_hold": {
+   "fdi_mean_dice": 0.853926012579843,
+   "fdi_mean_iou": 0.7685143257918475,
+   "tooth_recall": 0.8844307596170269,
+   "fdi_numbering_acc": 0.9627118644067797,
+   "n_teeth": 1180,
+   "worst_quartile_dice": 0.7019102929088687,
+   "tooth_dice": 0.9033614197749981
+  },
+  "STS_hold": {
+   "tooth_dice": 0.9077808416158756,
+   "worst_quartile_dice": 0.8726635346945205,
+   "n_images": 100
+  },
+  "AKU_hold": {
+   "tooth_dice": 0.8648030038191213,
+   "tooth_found": 0.9861111111111112,
+   "type_acc": 0.9776234567901234,
+   "n_teeth": 1296
+  },
+  "HITL_hold": {
+   "fdi_mean_dice": 0.7975994820099208,
+   "fdi_mean_iou": 0.7048621509586993,
+   "tooth_recall": 0.8592764900967769,
+   "fdi_numbering_acc": 0.9157303370786517,
+   "n_teeth": 1424,
+   "worst_quartile_dice": 0.5429351679720587,
+   "tooth_dice": 0.8842439561243438
+  },
+  "Cluj_eval": {
+   "implant": {
+    "iou": 0.5652092532564214,
+    "recall": 0.8333333333333334,
+    "precision": 0.6825396825396826,
+    "n_gt": 60
+   },
+   "prosthetic_restoration": {
+    "iou": 0.5610692156488869,
+    "recall": 0.8782287822878229,
+    "precision": 0.4588477366255144,
+    "n_gt": 271
+   },
+   "filling": {
+    "iou": 0.4428555045941887,
+    "recall": 0.834625322997416,
+    "precision": 0.6060848678943155,
+    "n_gt": 1161
+   },
+   "root_canal_treatment": {
+    "iou": 0.5901065753446874,
+    "recall": 0.9365591397849462,
+    "precision": 0.8228915662650602,
+    "n_gt": 930
+   }
+  },
+  "teeth_score": 0.8529874304680592,
+  "rest_score": 0.5398101372110461,
+  "score": 0.774693107153806
+ },
+ {
+  "epoch": 4,
+  "train_loss": 0.6101925443410874,
+  "time_min": 9.5834436972936
+ },
+ {
+  "epoch": 5,
+  "train_loss": 0.6199360282421112,
+  "time_min": 11.837154599030812
+ },
+ {
+  "epoch": 6,
+  "train_loss": 0.6092272597551346,
+  "time_min": 14.014880426724751,
+  "E_val": {
+   "fdi_mean_dice": 0.8332353545541106,
+   "fdi_mean_iou": 0.7338188617036381,
+   "tooth_recall": 0.8605355110827941,
+   "fdi_numbering_acc": 0.9681159420289855,
+   "n_teeth": 1725,
+   "worst_quartile_dice": 0.7359530507967263,
+   "tooth_dice": 0.909148992294313
+  },
+  "D_hold": {
+   "fdi_mean_dice": 0.8085931096605272,
+   "fdi_mean_iou": 0.7107797124303777,
+   "tooth_recall": 0.7981683203837447,
+   "fdi_numbering_acc": 0.9388145315487572,
+   "n_teeth": 523,
+   "worst_quartile_dice": 0.6168385016770047
+  },
+  "UFBA_hold": {
+   "fdi_mean_dice": 0.8523737190460976,
+   "fdi_mean_iou": 0.7671824999936951,
+   "tooth_recall": 0.8828518285491046,
+   "fdi_numbering_acc": 0.9610169491525423,
+   "n_teeth": 1180,
+   "worst_quartile_dice": 0.6937187682782717,
+   "tooth_dice": 0.9034146473088264
+  },
+  "STS_hold": {
+   "tooth_dice": 0.9097151748281973,
+   "worst_quartile_dice": 0.8799506519966772,
+   "n_images": 100
+  },
+  "AKU_hold": {
+   "tooth_dice": 0.8816999295900612,
+   "tooth_found": 0.9853395061728395,
+   "type_acc": 0.9799382716049383,
+   "n_teeth": 1296
+  },
+  "HITL_hold": {
+   "fdi_mean_dice": 0.8070349799762359,
+   "fdi_mean_iou": 0.7181662090686668,
+   "tooth_recall": 0.8525149478844652,
+   "fdi_numbering_acc": 0.9129213483146067,
+   "n_teeth": 1424,
+   "worst_quartile_dice": 0.5580670529328694,
+   "tooth_dice": 0.8932307662879446
+  },
+  "Cluj_eval": {
+   "implant": {
+    "iou": 0.55912236098306,
+    "recall": 0.8166666666666667,
+    "precision": 0.7142857142857143,
+    "n_gt": 60
+   },
+   "prosthetic_restoration": {
+    "iou": 0.5471873286540346,
+    "recall": 0.8856088560885609,
+    "precision": 0.4111111111111111,
+    "n_gt": 271
+   },
+   "filling": {
+    "iou": 0.4458768635516169,
+    "recall": 0.7941429801894918,
+    "precision": 0.6883561643835616,
+    "n_gt": 1161
+   },
+   "root_canal_treatment": {
+    "iou": 0.593814559527489,
+    "recall": 0.9172043010752688,
+    "precision": 0.844988344988345,
+    "n_gt": 930
+   }
+  },
+  "teeth_score": 0.856961906443778,
+  "rest_score": 0.5365002781790501,
+  "score": 0.7768464993775961
+ },
+ {
+  "epoch": 7,
+  "train_loss": 0.6024148115515708,
+  "time_min": 16.456502171357474
+ },
+ {
+  "epoch": 8,
+  "train_loss": 0.5840224838703871,
+  "time_min": 18.673882738749185
+ },
+ {
+  "epoch": 9,
+  "train_loss": 0.6049868511706591,
+  "time_min": 20.829266945521038,
+  "E_val": {
+   "fdi_mean_dice": 0.8308018470452626,
+   "fdi_mean_iou": 0.7303759726903915,
+   "tooth_recall": 0.8710221447421076,
+   "fdi_numbering_acc": 0.967536231884058,
+   "n_teeth": 1725,
+   "worst_quartile_dice": 0.7277676295624144,
+   "tooth_dice": 0.9074686069689496
+  },
+  "D_hold": {
+   "fdi_mean_dice": 0.8046275228582479,
+   "fdi_mean_iou": 0.70325142867889,
+   "tooth_recall": 0.8076805384290079,
+   "fdi_numbering_acc": 0.9369024856596558,
+   "n_teeth": 523,
+   "worst_quartile_dice": 0.6163913341694565
+  },
+  "UFBA_hold": {
+   "fdi_mean_dice": 0.8375167372038635,
+   "fdi_mean_iou": 0.7454285849888377,
+   "tooth_recall": 0.9087696472846832,
+   "fdi_numbering_acc": 0.9601694915254237,
+   "n_teeth": 1180,
+   "worst_quartile_dice": 0.6776812281048445,
+   "tooth_dice": 0.8906258389771251
+  },
+  "STS_hold": {
+   "tooth_dice": 0.88460319463201,
+   "worst_quartile_dice": 0.8357561856984168,
+   "n_images": 100
+  },
+  "AKU_hold": {
+   "tooth_dice": 0.8578986334941414,
+   "tooth_found": 0.9884259259259259,
+   "type_acc": 0.9791666666666666,
+   "n_teeth": 1296
+  },
+  "HITL_hold": {
+   "fdi_mean_dice": 0.7891359296556423,
+   "fdi_mean_iou": 0.691422576962845,
+   "tooth_recall": 0.8729831039403548,
+   "fdi_numbering_acc": 0.913623595505618,
+   "n_teeth": 1424,
+   "worst_quartile_dice": 0.54522930299993,
+   "tooth_dice": 0.876953055511212
+  },
+  "Cluj_eval": {
+   "implant": {
+    "iou": 0.5806576111001289,
+    "recall": 0.8166666666666667,
+    "precision": 0.7096774193548387,
+    "n_gt": 60
+   },
+   "prosthetic_restoration": {
+    "iou": 0.5136477676245353,
+    "recall": 0.8597785977859779,
+    "precision": 0.40847457627118644,
+    "n_gt": 271
+   },
+   "filling": {
+    "iou": 0.4165587492019437,
+    "recall": 0.8768303186907838,
+    "precision": 0.5272988505747126,
+    "n_gt": 1161
+   },
+   "root_canal_treatment": {
+    "iou": 0.5795099712727424,
+    "recall": 0.9419354838709677,
+    "precision": 0.7865429234338747,
+    "n_gt": 930
+   }
+  },
+  "teeth_score": 0.844202980245905,
+  "rest_score": 0.5225935247998377,
+  "score": 0.7638006163843882
+ },
+ {
+  "epoch": 10,
+  "train_loss": 0.6047615609019995,
+  "time_min": 23.258134706815085
+ },
+ {
+  "epoch": 11,
+  "train_loss": 0.5727993947416544,
+  "time_min": 25.413517153263093
+ },
+ {
+  "epoch": 12,
+  "train_loss": 0.6145676691383123,
+  "time_min": 27.610118897755942,
+  "E_val": {
+   "fdi_mean_dice": 0.8314507218147965,
+   "fdi_mean_iou": 0.7313871936826035,
+   "tooth_recall": 0.8690587403203455,
+   "fdi_numbering_acc": 0.9669565217391304,
+   "n_teeth": 1725,
+   "worst_quartile_dice": 0.7246353522421016,
+   "tooth_dice": 0.9074705826473334
+  },
+  "D_hold": {
+   "fdi_mean_dice": 0.8088282679820195,
+   "fdi_mean_iou": 0.7079344977705737,
+   "tooth_recall": 0.8099976572079893,
+   "fdi_numbering_acc": 0.9445506692160612,
+   "n_teeth": 523,
+   "worst_quartile_dice": 0.6402354751559857
+  },
+  "UFBA_hold": {
+   "fdi_mean_dice": 0.8474088473139938,
+   "fdi_mean_iou": 0.7597832259212983,
+   "tooth_recall": 0.9002457575054673,
+   "fdi_numbering_acc": 0.9610169491525423,
+   "n_teeth": 1180,
+   "worst_quartile_dice": 0.6936888585421771,
+   "tooth_dice": 0.8991724670307245
+  },
+  "STS_hold": {
+   "tooth_dice": 0.8993095852556289,
+   "worst_quartile_dice": 0.8591556107564109,
+   "n_images": 100
+  },
+  "AKU_hold": {
+   "tooth_dice": 0.8783103766801685,
+   "tooth_found": 0.9868827160493827,
+   "type_acc": 0.9799382716049383,
+   "n_teeth": 1296
+  },
+  "HITL_hold": {
+   "fdi_mean_dice": 0.8058248143263401,
+   "fdi_mean_iou": 0.7171877269083167,
+   "tooth_recall": 0.8575177142993606,
+   "fdi_numbering_acc": 0.9150280898876404,
+   "n_teeth": 1424,
+   "worst_quartile_dice": 0.5676536264320312,
+   "tooth_dice": 0.8928387416221254
+  },
+  "Cluj_eval": {
+   "implant": {
+    "iou": 0.5928587694129435,
+    "recall": 0.8333333333333334,
+    "precision": 0.7818181818181819,
+    "n_gt": 60
+   },
+   "prosthetic_restoration": {
+    "iou": 0.5555064677665483,
+    "recall": 0.8929889298892989,
+    "precision": 0.3769363166953528,
+    "n_gt": 271
+   },
+   "filling": {
+    "iou": 0.45762318521847706,
+    "recall": 0.830318690783807,
+    "precision": 0.636744966442953,
+    "n_gt": 1161
+   },
+   "root_canal_treatment": {
+    "iou": 0.5942837915826371,
+    "recall": 0.9290322580645162,
+    "precision": 0.8286713286713286,
+    "n_gt": 930
+   }
+  },
+  "teeth_score": 0.853657760139222,
+  "rest_score": 0.5500680534951514,
+  "score": 0.7777603334782044
+ },
+ {
+  "epoch": 13,
+  "train_loss": 0.6034083116054535,
+  "time_min": 30.03465606768926
+ },
+ {
+  "epoch": 14,
+  "train_loss": 0.583541207998991,
+  "time_min": 32.189129714171095
+ },
+ {
+  "epoch": 15,
+  "train_loss": 0.562876070946455,
+  "time_min": 34.39393230676651,
+  "E_val": {
+   "fdi_mean_dice": 0.8315746321429269,
+   "fdi_mean_iou": 0.7310425655007619,
+   "tooth_recall": 0.8684957586575731,
+   "fdi_numbering_acc": 0.9698550724637681,
+   "n_teeth": 1725,
+   "worst_quartile_dice": 0.7324494031713017,
+   "tooth_dice": 0.9080450943093665
+  },
+  "D_hold": {
+   "fdi_mean_dice": 0.8035395770755741,
+   "fdi_mean_iou": 0.7038532720222521,
+   "tooth_recall": 0.8039553447459142,
+   "fdi_numbering_acc": 0.9349904397705545,
+   "n_teeth": 523,
+   "worst_quartile_dice": 0.6232394297476419
+  },
+  "UFBA_hold": {
+   "fdi_mean_dice": 0.8421968576146864,
+   "fdi_mean_iou": 0.7515634429551413,
+   "tooth_recall": 0.9016836631352031,
+   "fdi_numbering_acc": 0.9601694915254237,
+   "n_teeth": 1180,
+   "worst_quartile_dice": 0.6837233640569373,
+   "tooth_dice": 0.8943166313117844
+  },
+  "STS_hold": {
+   "tooth_dice": 0.8918749965310292,
+   "worst_quartile_dice": 0.8454163931225497,
+   "n_images": 100
+  },
+  "AKU_hold": {
+   "tooth_dice": 0.8628160962140957,
+   "tooth_found": 0.9868827160493827,
+   "type_acc": 0.9791666666666666,
+   "n_teeth": 1296
+  },
+  "HITL_hold": {
+   "fdi_mean_dice": 0.7921069420348983,
+   "fdi_mean_iou": 0.695850913121381,
+   "tooth_recall": 0.8681921227405919,
+   "fdi_numbering_acc": 0.9157303370786517,
+   "n_teeth": 1424,
+   "worst_quartile_dice": 0.5511083346928356,
+   "tooth_dice": 0.8793717735133669
+  },
+  "Cluj_eval": {
+   "implant": {
+    "iou": 0.5814865827594395,
+    "recall": 0.8166666666666667,
+    "precision": 0.7543859649122807,
+    "n_gt": 60
+   },
+   "prosthetic_restoration": {
+    "iou": 0.547077590964718,
+    "recall": 0.9040590405904059,
+    "precision": 0.36012861736334406,
+    "n_gt": 271
+   },
+   "filling": {
+    "iou": 0.462566500870349,
+    "recall": 0.8380706287683032,
+    "precision": 0.6418642681929682,
+    "n_gt": 1161
+   },
+   "root_canal_treatment": {
+    "iou": 0.5972055274428644,
+    "recall": 0.9258064516129032,
+    "precision": 0.8406976744186047,
+    "n_gt": 930
+   }
+  },
+  "teeth_score": 0.8470473978065827,
+  "rest_score": 0.5470840505093427,
+  "score": 0.7720565609822727
+ },
+ {
+  "epoch": 16,
+  "train_loss": 0.5642167626172304,
+  "time_min": 36.81493546565374
+ },
+ {
+  "epoch": 17,
+  "train_loss": 0.5750311013013124,
+  "time_min": 38.96219942569733
+ },
+ {
+  "epoch": 18,
+  "train_loss": 0.5662321611344814,
+  "time_min": 41.13746276299159,
+  "E_val": {
+   "fdi_mean_dice": 0.8316610034480624,
+   "fdi_mean_iou": 0.7317534351584576,
+   "tooth_recall": 0.8678110468803325,
+   "fdi_numbering_acc": 0.9681159420289855,
+   "n_teeth": 1725,
+   "worst_quartile_dice": 0.7302108320042044,
+   "tooth_dice": 0.9087374817156925
+  },
+  "D_hold": {
+   "fdi_mean_dice": 0.8084364242461753,
+   "fdi_mean_iou": 0.7089030520303129,
+   "tooth_recall": 0.8095343641504507,
+   "fdi_numbering_acc": 0.9426386233269598,
+   "n_teeth": 523,
+   "worst_quartile_dice": 0.6322155302058103
+  },
+  "UFBA_hold": {
+   "fdi_mean_dice": 0.8492423229114847,
+   "fdi_mean_iou": 0.7626497435166453,
+   "tooth_recall": 0.8944035787924619,
+   "fdi_numbering_acc": 0.9601694915254237,
+   "n_teeth": 1180,
+   "worst_quartile_dice": 0.6896701558532407,
+   "tooth_dice": 0.9012702602469248
+  },
+  "STS_hold": {
+   "tooth_dice": 0.9028009505255292,
+   "worst_quartile_dice": 0.8651272498852063,
+   "n_images": 100
+  },
+  "AKU_hold": {
+   "tooth_dice": 0.8718911264142682,
+   "tooth_found": 0.9861111111111112,
+   "type_acc": 0.9791666666666666,
+   "n_teeth": 1296
+  },
+  "HITL_hold": {
+   "fdi_mean_dice": 0.8093948818509744,
+   "fdi_mean_iou": 0.7216763219542505,
+   "tooth_recall": 0.856288507318373,
+   "fdi_numbering_acc": 0.9171348314606742,
+   "n_teeth": 1424,
+   "worst_quartile_dice": 0.5688362198586796,
+   "tooth_dice": 0.8953626739150626
+  },
+  "Cluj_eval": {
+   "implant": {
+    "iou": 0.5898216373726313,
+    "recall": 0.8333333333333334,
+    "precision": 0.7818181818181819,
+    "n_gt": 60
+   },
+   "prosthetic_restoration": {
+    "iou": 0.5233211638181751,
+    "recall": 0.8929889298892989,
+    "precision": 0.3418803418803419,
+    "n_gt": 271
+   },
+   "filling": {
+    "iou": 0.45194281206643966,
+    "recall": 0.8587424633936261,
+    "precision": 0.619887730553328,
+    "n_gt": 1161
+   },
+   "root_canal_treatment": {
+    "iou": 0.5939804378623522,
+    "recall": 0.9311827956989247,
+    "precision": 0.8252656434474617,
+    "n_gt": 930
+   }
+  },
+  "teeth_score": 0.8545107465871157,
+  "rest_score": 0.5397665127798996,
+  "score": 0.7758246881353117
+ },
+ {
+  "epoch": 19,
+  "train_loss": 0.5818368067741394,
+  "time_min": 43.55776383082072
+ },
+ {
+  "epoch": 20,
+  "train_loss": 0.5819162110239268,
+  "time_min": 45.71600638230642
+ },
+ {
+  "epoch": 21,
+  "train_loss": 0.5685412746071815,
+  "time_min": 47.86164646546046,
+  "E_val": {
+   "fdi_mean_dice": 0.8313343092520464,
+   "fdi_mean_iou": 0.7312230429414363,
+   "tooth_recall": 0.8691622701221807,
+   "fdi_numbering_acc": 0.9686956521739131,
+   "n_teeth": 1725,
+   "worst_quartile_dice": 0.7276874317112146,
+   "tooth_dice": 0.9080796819725435
+  },
+  "D_hold": {
+   "fdi_mean_dice": 0.8075879682914976,
+   "fdi_mean_iou": 0.7075425203963954,
+   "tooth_recall": 0.8076668741948543,
+   "fdi_numbering_acc": 0.9407265774378585,
+   "n_teeth": 523,
+   "worst_quartile_dice": 0.6305771188119345
+  },
+  "UFBA_hold": {
+   "fdi_mean_dice": 0.8466982145841585,
+   "fdi_mean_iou": 0.758827386949319,
+   "tooth_recall": 0.8966208572909867,
+   "fdi_numbering_acc": 0.9593220338983051,
+   "n_teeth": 1180,
+   "worst_quartile_dice": 0.6891376326972506,
+   "tooth_dice": 0.8991580958405403
+  },
+  "STS_hold": {
+   "tooth_dice": 0.9009108661819373,
+   "worst_quartile_dice": 0.861482925482988,
+   "n_images": 100
+  },
+  "AKU_hold": {
+   "tooth_dice": 0.8682395344996316,
+   "tooth_found": 0.9884259259259259,
+   "type_acc": 0.9814814814814815,
+   "n_teeth": 1296
+  },
+  "HITL_hold": {
+   "fdi_mean_dice": 0.8048851134842429,
+   "fdi_mean_iou": 0.7152157543963092,
+   "tooth_recall": 0.8596278852759026,
+   "fdi_numbering_acc": 0.9178370786516854,
+   "n_teeth": 1424,
+   "worst_quartile_dice": 0.563050182907049,
+   "tooth_dice": 0.8919520781890304
+  },
+  "Cluj_eval": {
+   "implant": {
+    "iou": 0.5885098150678023,
+    "recall": 0.8333333333333334,
+    "precision": 0.7777777777777778,
+    "n_gt": 60
+   },
+   "prosthetic_restoration": {
+    "iou": 0.5453039026368754,
+    "recall": 0.8929889298892989,
+    "precision": 0.40344827586206894,
+    "n_gt": 271
+   },
+   "filling": {
+    "iou": 0.4441057508669286,
+    "recall": 0.8716623600344531,
+    "precision": 0.5824863174354965,
+    "n_gt": 1161
+   },
+   "root_canal_treatment": {
+    "iou": 0.5966548194711406,
+    "recall": 0.9301075268817204,
+    "precision": 0.8309692671394799,
+    "n_gt": 930
+   }
+  },
+  "teeth_score": 0.8527128299640733,
+  "rest_score": 0.5436435720106868,
+  "score": 0.7754455154757266
+ },
+ {
+  "epoch": 22,
+  "train_loss": 0.5524629095494747,
+  "time_min": 50.33889118035634
+ },
+ {
+  "epoch": 23,
+  "train_loss": 0.5653811318278312,
+  "time_min": 52.48807077010473
+ },
+ {
+  "epoch": 24,
+  "train_loss": 0.5633481056541204,
+  "time_min": 54.639377268155414,
+  "E_val": {
+   "fdi_mean_dice": 0.8314112639168709,
+   "fdi_mean_iou": 0.7313099841876259,
+   "tooth_recall": 0.8679264870104785,
+   "fdi_numbering_acc": 0.9686956521739131,
+   "n_teeth": 1725,
+   "worst_quartile_dice": 0.7305182377421376,
+   "tooth_dice": 0.9085307929234635
+  },
+  "D_hold": {
+   "fdi_mean_dice": 0.8069936552193607,
+   "fdi_mean_iou": 0.7070417655093229,
+   "tooth_recall": 0.8059872832197347,
+   "fdi_numbering_acc": 0.9407265774378585,
+   "n_teeth": 523,
+   "worst_quartile_dice": 0.6277890351381721
+  },
+  "UFBA_hold": {
+   "fdi_mean_dice": 0.8467737059720587,
+   "fdi_mean_iou": 0.7588050662144284,
+   "tooth_recall": 0.8957985055494769,
+   "fdi_numbering_acc": 0.9610169491525423,
+   "n_teeth": 1180,
+   "worst_quartile_dice": 0.6894953442581915,
+   "tooth_dice": 0.8989552316428768
+  },
+  "STS_hold": {
+   "tooth_dice": 0.9004633615887659,
+   "worst_quartile_dice": 0.8606386934743873,
+   "n_images": 100
+  },
+  "AKU_hold": {
+   "tooth_dice": 0.86841644895702,
+   "tooth_found": 0.9861111111111112,
+   "type_acc": 0.9791666666666666,
+   "n_teeth": 1296
+  },
+  "HITL_hold": {
+   "fdi_mean_dice": 0.8054726121084191,
+   "fdi_mean_iou": 0.7160335085302628,
+   "tooth_recall": 0.858750735087004,
+   "fdi_numbering_acc": 0.9157303370786517,
+   "n_teeth": 1424,
+   "worst_quartile_dice": 0.5641399194568167,
+   "tooth_dice": 0.8921541910466733
+  },
+  "Cluj_eval": {
+   "implant": {
+    "iou": 0.5887564535661929,
+    "recall": 0.8333333333333334,
+    "precision": 0.7241379310344828,
+    "n_gt": 60
+   },
+   "prosthetic_restoration": {
+    "iou": 0.5425625151698875,
+    "recall": 0.8929889298892989,
+    "precision": 0.3969594594594595,
+    "n_gt": 271
+   },
+   "filling": {
+    "iou": 0.44712371955803976,
+    "recall": 0.8621877691645133,
+    "precision": 0.5977830562153602,
+    "n_gt": 1161
+   },
+   "root_canal_treatment": {
+    "iou": 0.595512646760425,
+    "recall": 0.9290322580645162,
+    "precision": 0.8333333333333334,
+    "n_gt": 930
+   }
+  },
+  "teeth_score": 0.8524843594362198,
+  "rest_score": 0.5434888337636363,
+  "score": 0.7752354780180739
+ }
+]
