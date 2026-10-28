@@ -1,131 +1,110 @@
 # MouthTwin
 
-Turn a dental panoramic X-ray into an interactive, 3D-style model of the arch.
+Upload a dental panoramic X-ray (OPG) and get an interactive 3D model of the dental arch in your browser.
 
-> MouthTwin is an experimental educational proof of concept. It is not intended for diagnosis, treatment planning, or clinical decision-making. Visualizations derived from 2D dental images may be conceptual or inferred. True patient-specific 3D anatomical information requires appropriate 3D imaging such as CBCT.
+> **Research prototype, not a medical device.** MouthTwin is an educational proof of concept. It must not be used for diagnosis, treatment planning or any clinical decision. A 2D image cannot give true patient-specific 3D anatomy; that needs 3D imaging such as CBCT. Anything beyond tooth position, outline and radiopaque restorations is inferred or generic.
 
-## What works now
+## What it does
 
-- **Run MouthTwin**: a synthetic OPG goes through a 5-second analysis animation, grows into 3D and bends back into an arch.
-- **3D anatomy fitted to your X-ray**: real teeth (crowns and roots), mandible, maxilla, nerve canals and sinuses from an expert-labelled CBCT (ToothFairy2). The tooth model decides which teeth are present. Each tooth is then compared with the same tooth on 634 expert-labelled OPGs (`ml/tooth_pose_stats.py`): extra tilt, a crown sitting deeper or higher than the bite line (impacted / unerupted teeth), a short root and crown-only outlines (developing wisdom teeth) are copied onto the 3D tooth. Fanning caused by head position on the OPG is removed first. Ambient occlusion gives the arch real depth. The older brightness relief is still available as the "X-ray relief" layer.
-- **Upload OPG**: JPEG, PNG, WebP or BMP. The file is validated and processed in your browser. It is not uploaded or stored.
-- **Workspace**: Image, Model and Split views. Click any tooth to isolate it and fly the camera to it. The inspector shows FDI, Universal and Palmer notation, the tooth's outline in the OPG, and how each pipeline stage was produced.
-- **Layers**: teeth, jaw bone, nerve canals, maxillary sinuses, crowns/fillings/root canals/implants, X-ray relief.
-- **Modes**: Clinical, Anatomy, Patient.
+- **Run the demo.** A synthetic OPG goes through a short analysis animation, grows into 3D and bends back into an arch.
+- **Upload your own OPG.** JPEG, PNG, WebP or BMP. The file is validated and processed in your browser. Nothing is uploaded or stored.
+- **Workspace views.** Image, Model and Split. Click a tooth to isolate it and fly the camera to it. The inspector shows FDI, Universal and Palmer notation, the tooth outline from the X-ray, and how each pipeline stage was produced.
+- **Layers.** Teeth, jaw bone, nerve canals, maxillary sinuses, restorations (crowns, fillings, root canals, implants) and an optional X-ray relief.
+- **Audience modes.** Clinical, Anatomy and Patient. They change how much is said, not what is true.
 
-## Tooth and restoration model
+## How it works
 
-Uploads and the demo run one U-Net (MobileNetV2 encoder, about 4.2M parameters) in the browser with ONNX Runtime Web. It outlines every tooth, assigns its FDI number, and also flags four kinds of work: **implants, crowns/caps (prosthetic restorations), fillings and root-canal fillings**. The app turns those into 3D: metallic caps on the crown, a filling patch, a bright filled canal in the root, an implant screw, and a bar between crowns that look joined (bridge). Everything is decided from the picture only. The material, the exact shape and the quality of the work are not known, and the 3D shape of a cap or canal is generic.
+1. **Read the X-ray.** A U-Net (MobileNetV2 encoder, about 4.2M parameters) runs in the browser through ONNX Runtime Web. It outlines every tooth, assigns its FDI number and flags four kinds of dental work: implants, crowns and caps, fillings, and root-canal fillings.
+2. **Fit real anatomy.** Teeth, jaw bone, nerve canals and sinuses come from one expert-labelled CBCT (ToothFairy2). Each tooth is compared with the same tooth on 634 expert-labelled OPGs and adjusted for tilt, depth, length and crown-only outlines (for example developing wisdom teeth). Head-position fanning is removed first.
+3. **Draw the dental work.** Metallic caps, filling patches, bright root canals, implant screws and bridges are added where the X-ray shows them.
 
-**Round 2** adds harder data and a multi-task head:
+What comes straight from the image: which teeth exist, their outline, length, tilt, depth in the bone, and which carry a radiopaque restoration. What is generic: crown and root shape, the arch, the bone, and how a cap, filling or implant looks. Depth is never measured. Details are in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-- DENTEX quadrant-enumeration (634 OPGs, clinician tooth outlines) plus 705 DENTEX disease OPGs (partial tooth labels) and 1,571 unlabelled OPGs. The round-1 model pseudo-labels the extra OPGs; pixels it is unsure about are ignored, implausible results and near-duplicates of held-out images are dropped.
-- Cluj dental-condition OPG set (1,808 OPGs with boxes for implants, prosthetic restorations, fillings, root-canal treatment) for the restoration planes.
-- Heavy augmentation (tilt, shear, contrast, noise, blur, resolution loss) so noisy and awkward OPGs behave better.
+## Model results
 
-**Round 3** adds 2,400 more varied adult OPGs: STS-2D-Tooth (different country and scanners, dentist-checked tooth masks + 1,500 unlabelled) and AKU (many partially edentulous, bridged and crowned mouths, a human outline for every tooth). Children's OPGs are not used: the model has no classes for baby teeth.
+The model went through four shipped rounds of training. Numbers below are from held-out OPGs that were never used for training; each round is compared on the same sets.
 
-**Round 4 (current)** adds UFBA-425 (377 usable OPGs with a human mask for every FDI-numbered tooth, many with braces; 40 kept as a new held-out test) and the remaining STS unlabelled OPGs (2,606 used instead of 1,500), about 7,600 training OPGs in all. It starts from round 3 with half the learning rate, samples the Cluj restoration OPGs more often, and picks its checkpoint on teeth *and* restorations together. A first attempt (round 4a) picked on teeth only and lost filling detection (IoU 0.46 to 0.40), so it was not shipped.
-
-Results on held-out OPGs (never used for training). Each round starts from the previous one and is compared on the same sets:
-
-| Held-out test | Round 1 | Round 2 | Round 3 | Round 4 |
-| --- | --- | --- | --- | --- |
-| UFBA, 40 OPGs (new, human FDI masks): mean per-tooth Dice | - | - | 0.840 | **0.852** |
-| UFBA: worst-quartile Dice | - | - | 0.676 | **0.702** |
-| UFBA: FDI numbering accuracy | - | - | 96.3% | 96.3% |
-| STS, 100 OPGs from new scanners: tooth-vs-background Dice | - | 0.76 | 0.91 | 0.91 |
-| STS: worst-quartile Dice | - | 0.70 | 0.88 | 0.87 |
-| AKU, 50 restored / partially edentulous OPGs: tooth Dice | - | 0.80 | 0.88 | 0.88 |
-| AKU: tooth type correct (incisor / canine / premolar / molar) | - | 96.8% | 97.5% | 97.4% |
-| DENTEX, 60 OPGs: FDI numbering accuracy | 96.4% | 97.2% | 97.1% | 96.9% |
-| DENTEX: mean per-tooth Dice | 0.834 | 0.839 | 0.834 | 0.835 |
-| DENTEX hard teeth: numbering accuracy | 92.0% | 94.5% | 93.5% | 93.3% |
-| DENTEX hard teeth: worst-quartile Dice | 0.574 | 0.651 | 0.608 | **0.629** |
-
-Round 3 was much better than round 2 on X-rays that do not look like DENTEX (which is what a random upload usually is). Round 4 is a small step: tooth outlines are tighter on the new UFBA X-rays and on the hardest teeth, and implant calls are cleaner; tooth numbering did not move (changes of 0.2 points are one to three teeth). The model is close to what this network size and these labels can give.
-
-| Restoration found on 220 held-out Cluj OPGs (per region, box labels, app thresholds) | Round 3 recall / precision | Round 4 recall / precision |
+| Held-out test | Round 3 | Round 4 (current) |
 | --- | --- | --- |
-| Root-canal filling | 0.94 / 0.81 | 0.94 / 0.81 |
-| Implant | 0.92 / 0.84 | 0.92 / 0.85 |
-| Crown / cap | 0.84 / 0.64 | 0.81 / 0.67 |
-| Filling | 0.84 / 0.70 | 0.85 / 0.71 |
+| UFBA, 40 OPGs: mean per-tooth Dice | 0.840 | **0.852** |
+| UFBA: FDI numbering accuracy | 96.3% | 96.3% |
+| STS, 100 OPGs from new scanners: tooth-vs-background Dice | 0.91 | 0.91 |
+| AKU, 50 restored or partially edentulous OPGs: tooth Dice | 0.88 | 0.88 |
+| DENTEX, 60 OPGs: FDI numbering accuracy | 97.1% | 96.9% |
+| DENTEX: mean per-tooth Dice | 0.834 | 0.835 |
 
-For round 4 the crown/cap threshold was raised (0.8 to 0.9) to keep its precision; at the old threshold round 4 calls more crowns that are not there (precision 0.58). The thresholds were tuned on these same 220 OPGs, so treat these restoration numbers as slightly optimistic.
+Restoration detection on 220 held-out Cluj OPGs (per region, app thresholds):
 
-Read these honestly: complex OPGs are better, not solved. Crowded, rotated or heavily restored mouths still produce wrong or missing tooth numbers, and crown and filling calls will sometimes be wrong (they are trained from loose boxes, and the app also checks that the pixels are actually bright). AU-OPG, which has much more crown detail, was not used because it has no published licence.
+| Restoration | Recall / precision (round 4) |
+| --- | --- |
+| Root-canal filling | 0.94 / 0.81 |
+| Implant | 0.92 / 0.85 |
+| Crown or cap | 0.81 / 0.67 |
+| Filling | 0.85 / 0.71 |
 
-Curves and example overlays are in `ml/results/` (round 3 in `ml/results/round3/`, round 4 in `ml/results/round4/`). Training code is in `ml/`.
+The restoration thresholds were tuned on these same 220 OPGs, so treat those numbers as slightly optimistic. Rounds 1 and 2 and the full comparison tables are in `ml/results/`.
 
-**Data credit and license.** DENTEX: Hamamci et al., "DENTEX: An Abnormal Tooth Detection with Dental Enumeration and Diagnosis Benchmark for Panoramic X-rays", MICCAI 2023, https://huggingface.co/datasets/ibrahimhamamci/DENTEX (CC BY-NC-SA 4.0). Cluj OPG condition dataset: Mureșanu, Hedeșiu, Iacob et al., Diagnostics 2024, https://doi.org/10.5281/zenodo.15487430 (CC BY 4.0, used for non-commercial research and education). STS-2D-Tooth: Wang et al., Scientific Data 12:117 (2025), https://doi.org/10.5281/zenodo.10597292 (CC BY 4.0; the paper states CC BY-NC-ND). AKU OPG dataset: Data in Brief 2024, https://doi.org/10.5281/zenodo.10538750 (CC BY 4.0 on Zenodo; CC BY-NC 4.0 in the article). UFBA-425: 425 annotated panoramic X-rays with FDI tooth masks, https://figshare.com/articles/dataset/UFBA-425/29827475 (CC BY 4.0), from the authors of OralBBNet (https://github.com/devichand579/Instance_seg_teeth). Because DENTEX is share-alike, the trained weights (`public/models/mouthtwin-teeth.onnx`) and the demo X-ray are shared under CC BY-NC-SA 4.0: non-commercial use only, with attribution.
+**Limits.** These numbers measure agreement with clinician outlines on public data. They are not clinical validation. Crowded, rotated or heavily restored mouths still produce wrong or missing tooth numbers, and crown and filling calls are sometimes wrong. Children's OPGs are not supported because the model has no baby-tooth classes.
 
-**Reference 3D anatomy.** One full healthy dentition (case ToothFairy2F_027) from ToothFairy2 (Bolelli et al., University of Modena and Reggio Emilia, https://ditto.ing.unimore.it/toothfairy2/), CC BY-SA 4.0. Only the label volume is used. `scripts/build_reference_anatomy.py` turns it into `public/models/reference-anatomy.glb`.
+A round-5 experiment (human-in-the-loop labels plus DentalOPG-1550 and Kairouan data) was run but not shipped. Round 4 is the live model.
 
-These numbers describe agreement with clinician outlines on public data. They are not clinical validation. See `docs/ARCHITECTURE.md` for what the 3D can and can't show.
+## Run it locally
 
-## Run it
-
-Requirements: Node 20+ (tested on 22). Python 3.10+ only if you want to regenerate the demo image.
+You need Node 20 or newer (tested on 22). Python 3.10+ is only needed to regenerate the demo image.
 
 ```bash
 npm install
 npm run dev            # http://localhost:5173
 ```
 
-Build:
-
-```bash
-npm run build          # static site in dist/
-npm run build:single   # one self-contained HTML file in dist-single/
-npm run preview        # serve dist/ locally
-```
-
-Regenerate the synthetic demo OPG and its annotations:
-
-```bash
-pip install numpy scipy pillow
-npm run demo:generate
-```
-
-## Environment variables
-
-Copy `.env.example` to `.env`.
-
-| Variable | Default | Effect |
-| --- | --- | --- |
-| `VITE_INFERENCE_URL` | unset | When set, uploads are sent to `POST {url}/infer` (see `server/`). The privacy line on the landing page changes to say so. |
-
-## Where things go
-
-| Asset | Location |
+| Command | What it does |
 | --- | --- |
-| Demo OPG | `src/data/demo/opg-synthetic.jpg` (bundled). Swap in any de-identified OPG you have rights to. |
-| Demo inference | `src/data/demo/demo-inference.json`, same schema as `src/types/inference.ts` |
-| Segmentation masks | Convert to polygons in the inference JSON (`teeth[].polygon`, normalised 0..1) |
-| Model weights | `server/models/` |
-| Training data | `data/{images,masks,annotations,metadata}/` (keep out of the app bundle) |
-| Icons | Inline SVG in `src/components/` |
-| 3D assets | Not needed today. Teeth are procedural (`src/features/visualization/toothGeometry.ts`). Mean meshes from Teeth3DS could go in `public/models/`. |
+| `npm run build` | Static site in `dist/` |
+| `npm run build:single` | One self-contained HTML file in `dist-single/` |
+| `npm run preview` | Serve `dist/` locally |
+| `npm run typecheck` | TypeScript check |
+| `npm run demo:generate` | Regenerate the synthetic demo OPG (`pip install numpy scipy pillow` first) |
 
-## Connect a real model
+### Optional: connect your own inference server
 
-1. Implement `run_model()` in `server/main.py` so it returns `InferenceResult` (see `server/schema.py`).
-2. `cd server && pip install -r requirements.txt && uvicorn main:app --port 8000`
+Copy `.env.example` to `.env` and set `VITE_INFERENCE_URL`. Uploads are then sent to `POST {url}/infer` and the privacy note on the landing page changes to say so.
+
+1. Implement `run_model()` in `server/main.py` so it returns an `InferenceResult` (see `server/schema.py`).
+2. Run `cd server && pip install -r requirements.txt && uvicorn main:app --port 8000`.
 3. Set `VITE_INFERENCE_URL=http://localhost:8000` and restart `npm run dev`.
 
-## Deploy
+### Deploy
 
-The build is static. `base` is `./`, so it works from any sub-path.
+The build is static and `base` is `./`, so it works from any sub-path: GitHub Pages (publish `dist/`), Netlify (`npm run build`, publish `dist`) or Vercel (Vite preset).
 
-- **GitHub Pages**: push `dist/` to a `gh-pages` branch, or use the Pages action with `npm run build`.
-- **Netlify**: build command `npm run build`, publish directory `dist`.
-- **Vercel**: framework preset Vite.
+### Keyboard
 
-## Keyboard
+`1` Image, `2` Model, `3` Split, `R` reset camera, `N` FDI numbers, `Esc` clear selection.
 
-`1` Image · `2` Model · `3` Split · `R` reset camera · `N` FDI numbers · `Esc` clear selection
+## Repository layout
 
-## Recording a demo
+```
+src/        React + Three.js app (landing, imaging, pipeline, 3D visualization)
+public/     ONNX model, reference anatomy (GLB), ONNX Runtime WASM
+ml/         Training and export scripts, per-round results (see ml/README.md)
+server/     Optional FastAPI inference server
+scripts/    Demo OPG generator, reference-anatomy builder
+docs/       Architecture notes
+```
 
-Click **Run MouthTwin** and let it play (about 8 s from click to rotating arch). Then click tooth 36 and switch to Split. **Replay** in the top bar reruns the transformation. For a still frame of the transformation, run `__mouthtwin.freeze(0.5)` in the browser console.
+## Data credits and licences
+
+- **DENTEX**: Hamamci et al., MICCAI 2023, https://huggingface.co/datasets/ibrahimhamamci/DENTEX (CC BY-NC-SA 4.0).
+- **Cluj OPG condition dataset**: Mureșanu, Hedeșiu, Iacob et al., Diagnostics 2024, https://doi.org/10.5281/zenodo.15487430 (CC BY 4.0, used for non-commercial research and education).
+- **STS-2D-Tooth**: Wang et al., Scientific Data 12:117 (2025), https://doi.org/10.5281/zenodo.10597292 (CC BY 4.0 on Zenodo; the paper states CC BY-NC-ND).
+- **AKU OPG dataset**: Data in Brief 2024, https://doi.org/10.5281/zenodo.10538750 (CC BY 4.0 on Zenodo; CC BY-NC 4.0 in the article).
+- **UFBA-425**: 425 panoramic X-rays with FDI tooth masks, https://figshare.com/articles/dataset/UFBA-425/29827475 (CC BY 4.0), from the authors of OralBBNet (https://github.com/devichand579/Instance_seg_teeth).
+- **Reference 3D anatomy**: one healthy dentition (case ToothFairy2F_027) from ToothFairy2, Bolelli et al., University of Modena and Reggio Emilia, https://ditto.ing.unimore.it/toothfairy2/ (CC BY-SA 4.0). Only the label volume is used; `scripts/build_reference_anatomy.py` turns it into `public/models/reference-anatomy.glb`.
+
+AU-OPG was not used because it has no published licence.
+
+Because DENTEX is share-alike, the trained weights (`public/models/mouthtwin-teeth.onnx`) and the demo X-ray are shared under **CC BY-NC-SA 4.0**: non-commercial use only, with attribution.
+
+## Author
+
+Dr. Enosh A Paulson. [LinkedIn](https://linkedin.com/in/dr-enosh) · [GitHub](https://github.com/DrEnosh)

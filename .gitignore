@@ -24,3 +24,19 @@ dist-ssr
 *.sw?
 dist-single
 .env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Training artifacts (local only)
+ml/*.log
+ml/status*.txt
+ml/dentex/
+ml/runs*/
+
+# AI tooling folders
+.claude/
+CLAUDE.md
